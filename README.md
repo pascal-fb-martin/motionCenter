@@ -15,4 +15,4 @@ where hostname is the name of the machine where motion runs and camera identifie
 
 - Goal 1: visualise all motion detection events in a web page that shows a per-month calendar and a daily timeline.
 - Goal 2: central motion configuration.
-- goal 3: graphical edit of motion mask.
+- Goal 3: graphical edit of motion mask.
