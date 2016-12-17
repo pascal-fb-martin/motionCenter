@@ -32,6 +32,10 @@ proc webApi/monthly {year month} {
    return $result
 }
 
+proc timeCompare {v1 v2} {
+   string compare [lindex [split $v1 {-}] 1] [lindex [split $v2 {-}] 1]
+}
+
 proc webApi/daily {year month day} {
 
    global motionConfig
@@ -49,7 +53,7 @@ proc webApi/daily {year month day} {
    if {[catch {cd $path}]} {
       return "\[\]"
    }
-   set events [lsort [glob -nocomplain *.avi]]
+   set events [lsort -command timeCompare [glob -nocomplain *.avi]]
    if {$events == {}} {
       return "\[\]"
    }

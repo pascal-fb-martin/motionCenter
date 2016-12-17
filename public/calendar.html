@@ -9,6 +9,7 @@ var dayName = new Array('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
 var monthName = new Array('January','February','March','April','May','June','July','August','September','October','November','December');
 
 var currentDate = new Date();
+var currentSelection = null;
 
 window.onload = function() {
 
@@ -49,6 +50,12 @@ window.onload = function() {
    }
 
    function updateDayEvents () {
+      if (currentSelection) {
+         currentSelection.innerHTML = ''+currentSelection.day;
+      }
+      this.innerHTML = '<b>'+this.day+'</b>';
+      currentSelection = this;
+
       getDayEvents (this.day, function (data) {
          var list = document.getElementsByClassName ('events')[0];
 
@@ -57,11 +64,34 @@ window.onload = function() {
             list.removeChild(list.childNodes[1]);
          }
 
+         var table = document.createElement("table");
+         var row = document.createElement("tr");
+
+         var column = 0;
          for (var i = 0; i < data.length; i++) {
-            var line = document.createElement("li");
-            line.innerHTML = data[i].cam + ' at ' + data[i].time + ' ' + '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:128px;height:128px;">';
-            list.appendChild(line);
+            column ++;
+            if (column > 8) {
+               table.appendChild(row);
+               row = document.createElement("tr");
+               column = 1;
+            }
+            var item = document.createElement("td");
+            var subtable = document.createElement("table");
+            var subrow = document.createElement("tr");
+            var subitem = document.createElement("td");
+            subitem.innerHTML = data[i].cam + ' at ' + data[i].time;
+            subrow.appendChild(subitem);
+            subtable.appendChild(subrow);
+            subrow = document.createElement("tr");
+            subitem = document.createElement("td");
+            subitem.innerHTML = '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:128px;height:128px;">';
+            subrow.appendChild(subitem);
+            subtable.appendChild(subrow);
+            item.appendChild(subtable);
+            row.appendChild(item);
          }
+         if (column > 0) table.appendChild(row);
+         list.appendChild(table);
       });
    }
 
@@ -92,17 +122,18 @@ window.onload = function() {
          // Build the title bar.
          var line = document.createElement("tr");
          line.className = 'calendarTopTitle';
-         var column = document.createElement("td");
+         var column = document.createElement("th");
          var button = document.createElement("button");
          button.innerHTML = '<';
          button.onclick = previousMonth;
          column.appendChild(button);
          line.appendChild(column);
-         column = document.createElement("td");
+         column = document.createElement("th");
          column.innerHTML = monthName[currentDate.getMonth()];
          column.className = 'calendarMonthTitle';
+         column.colSpan = 5;
          line.appendChild(column);
-         column = document.createElement("td");
+         column = document.createElement("th");
          button = document.createElement("button");
          button.innerHTML = '>';
          button.onclick = nextMonth;
@@ -113,7 +144,7 @@ window.onload = function() {
          line = document.createElement("tr");
          line.className = 'calendarBottomTitle';
          for (var i = 0; i < 7; i++) {
-            column = document.createElement("td");
+            column = document.createElement("th");
             column.innerHTML = dayName[i];
             column.className = 'calendarDayTitle';
             line.appendChild(column);
