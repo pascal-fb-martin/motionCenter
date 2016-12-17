@@ -46,27 +46,42 @@ proc webApi/daily {year month day} {
    set webpath [file join $year $month $day]
 
    set pwd [pwd]
-   cd $path
+   if {[catch {cd $path}]} {
+      return "\[\]"
+   }
    set events [lsort [glob -nocomplain *.avi]]
+   if {$events == {}} {
+      return "\[\]"
+   }
 
    set sep "\["
 
    # Retrieve the JPEG associated with each event.
+   foreach snapshot [glob -nocomplain *.jpg] {
+      set splitted [split $snapshot {-}]
+      set snapshotdb([lindex $splitted 0]-[lindex $splitted 1]) $snapshot
+   }
    foreach video $events {
       set id [split [file rootname $video] {-}]
       set server [lindex $id 0]
       set time [lindex $id 1]
+      set jpg {}
       set cursor [clock scan "$year $month $day $time" -format {%Y %m %d %H:%M:%S}]
-      while 1 {
-         set cursor
-         set shots [glob -nocomplain "${server}-[clock format $cursor -format {%H:%M:%S}]-*.jpg"]
-         if {$shots != {}} {
-            set jpg [lindex $shots 0]
+      for {set i 0} {$i < 120} {incr i} {
+         set index "${server}-[clock format $cursor -format {%H:%M:%S}]"
+         if {[info exists snapshotdb($index)]} {
+            set jpg $snapshotdb($index)
             break
          }
          set cursor [clock add $cursor 1 seconds]
       }
-      append result $sep "{\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"vid\":\"$webpath/$video\",\"jpg\":\"$webpath/$jpg\"}"
+      if {$jpg == {}} {
+         set jpg "null"
+      } else {
+         set jpg "\"$jpg\""
+      }
+      append result $sep "{\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"vid\":\"$video\",\"jpg\":$jpg}"
+      set sep ","
    }
    cd $pwd
    return "${result}\]"
@@ -78,7 +93,7 @@ proc webApi/snapshot {date jpg} {
 
    global motionConfig
 
-   set fd [file open [file join $motionConfig(videos) $year $month $day $jpg] r]
+   set fd [open [file join $motionConfig(videos) $date $jpg] [list RDONLY BINARY]]
    set data [read $fd]
    close $fd
 

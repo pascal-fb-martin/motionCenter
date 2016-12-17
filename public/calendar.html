@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel=stylesheet type="text/css"
+      href="/motioncenter.css" title="Motion Center">
+<script language="javascript" type="text/javascript">
+
+var dayName = new Array('Sun','Mon','Tue','Wed','Thu','Fri','Sat');
+var monthName = new Array('January','February','March','April','May','June','July','August','September','October','November','December');
+
+var currentDate = new Date();
+
+window.onload = function() {
+
+   function previousMonth () {
+      var month = currentDate.getMonth();
+      if (month == 0) {
+         currentDate.setYear(currentDate.getYear()+1899); // previous year
+         currentDate.setMonth(11); // December.
+      } else {
+         currentDate.setMonth(currentDate.getMonth()-1);
+      }
+      updateCalendar();
+   }
+
+   function nextMonth () {
+      var month = currentDate.getMonth();
+      if (month == 11) {
+         currentDate.setYear(currentDate.getYear()+1901);
+         currentDate.setMonth(0); // January.
+      } else {
+         currentDate.setMonth(currentDate.getMonth()+1);
+      }
+      updateCalendar();
+   }
+
+   function getDayEvents (day, callback) {
+      var year = currentDate.getYear() + 1900;
+      var month = currentDate.getMonth() + 1;
+      var command = new XMLHttpRequest();
+      command.open("GET", "/api/daily?year=" + year + "&month=" + month + "&day=" + day);
+      command.onreadystatechange = function () {
+         if (command.readyState === 4 && command.status === 200) {
+            var type = command.getResponseHeader("Content-Type");
+            callback((JSON.parse(command.responseText)));
+         }
+      }
+      command.send(null);
+   }
+
+   function updateDayEvents () {
+      getDayEvents (this.day, function (data) {
+         var list = document.getElementsByClassName ('events')[0];
+
+         // Remove all current content.
+         while (list.childNodes.length > 1) {
+            list.removeChild(list.childNodes[1]);
+         }
+
+         for (var i = 0; i < data.length; i++) {
+            var line = document.createElement("li");
+            line.innerHTML = data[i].time + ' ' + '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:128px;height:128px;">';
+            list.appendChild(line);
+         }
+      });
+   }
+
+   function getMonthlyCalendar (callback) {
+      var year = currentDate.getYear() + 1900;
+      var month = currentDate.getMonth() + 1;
+      var command = new XMLHttpRequest();
+      command.open("GET", "/api/monthly?year=" + year + "&month=" + month);
+      command.onreadystatechange = function () {
+         if (command.readyState === 4 && command.status === 200) {
+            var type = command.getResponseHeader("Content-Type");
+            callback((JSON.parse(command.responseText)));
+         }
+      }
+      command.send(null);
+   }
+
+   function updateCalendar () {
+
+      getMonthlyCalendar (function (data) {
+         var table = document.getElementsByClassName ('monthly')[0];
+
+         // Remove all current content.
+         while (table.childNodes.length > 1) {
+            table.removeChild(table.childNodes[1]);
+         }
+
+         // Build the title bar.
+         var line = document.createElement("tr");
+         line.className = 'calendarTopTitle';
+         var column = document.createElement("td");
+         var button = document.createElement("button");
+         button.innerHTML = '<';
+         button.onclick = previousMonth;
+         column.appendChild(button);
+         line.appendChild(column);
+         column = document.createElement("td");
+         column.innerHTML = monthName[currentDate.getMonth()];
+         column.className = 'calendarMonthTitle';
+         line.appendChild(column);
+         column = document.createElement("td");
+         button = document.createElement("button");
+         button.innerHTML = '>';
+         button.onclick = nextMonth;
+         column.appendChild(button);
+         line.appendChild(column);
+         table.appendChild(line);
+
+         line = document.createElement("tr");
+         line.className = 'calendarBottomTitle';
+         for (var i = 0; i < 7; i++) {
+            column = document.createElement("td");
+            column.innerHTML = dayName[i];
+            column.className = 'calendarDayTitle';
+            line.appendChild(column);
+         }
+         table.appendChild(line);
+
+         var calendar = new Date(currentDate);
+         calendar.setDate(1);
+
+         line = document.createElement("tr");
+
+         // Add empty columns until the first day of the month.
+         var hasDay = false;
+         for (var i = 0; i < calendar.getDay(); i++) {
+            column = document.createElement("td");
+            column.innerHTML = ' ';
+            line.appendChild(column);
+            hasDay = true;
+         }
+
+         // Go through each day of this month (31 or less).
+         for (var i = 1; i <= 31; i++) {
+            var dayOfMonth = calendar.getDate();
+            if (dayOfMonth < i) break;
+            if (dayOfMonth >= i)
+            {
+                // Start a new line for each new week.
+                weekDay = calendar.getDay();
+                if (weekDay == 0) {
+                   table.appendChild(line);
+                   line = document.createElement("tr");
+                   hasDay = false;
+                }
+                if (weekDay < 7) {
+                   column = document.createElement("td");
+                   if (data[i].hasrecords) {
+                     button = document.createElement("button");
+                     button.innerHTML = ''+i;
+                     button.onclick = updateDayEvents;
+                     button.day = ''+i;
+                     column.appendChild(button);
+                   } else {
+                     column.innerHTML = ''+i;
+                   }
+                   line.appendChild(column);
+                   hasDay = true;
+                }
+            }
+            calendar.setDate(dayOfMonth+1);
+         }
+         if (hasDay) 
+            table.appendChild(line);
+      });
+   }
+   updateCalendar();
+}
+</script>
+</head>
+<body>
+<center>
+<div class="monthlypanel">
+ <table class="monthlyborder">
+  <tr><td>
+   <table class="monthly">
+   </table>
+  </td></tr>
+ </table>
+</div>
+<div class="eventsdiv">
+<ul class="events">
+</ul>
+</div>
+</body>
+</html>
+
