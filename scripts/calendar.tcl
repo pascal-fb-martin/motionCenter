@@ -80,7 +80,7 @@ proc webApi/daily {year month day} {
       } else {
          set jpg "\"$jpg\""
       }
-      append result $sep "{\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"vid\":\"$video\",\"jpg\":$jpg}"
+      append result $sep "{\"cam\":\"$server\",\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"vid\":\"$video\",\"jpg\":$jpg}"
       set sep ","
    }
    cd $pwd

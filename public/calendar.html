@@ -59,7 +59,7 @@ window.onload = function() {
 
          for (var i = 0; i < data.length; i++) {
             var line = document.createElement("li");
-            line.innerHTML = data[i].time + ' ' + '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:128px;height:128px;">';
+            line.innerHTML = data[i].cam + ' at ' + data[i].time + ' ' + '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:128px;height:128px;">';
             list.appendChild(line);
          }
       });
