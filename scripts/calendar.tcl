@@ -91,30 +91,27 @@ proc webApi/daily {year month day} {
    return "${result}\]"
 }
 
+proc dumpStaticBinaryData {name} {
+
+   set fd [open $name [list RDONLY BINARY]]
+   set data [read $fd]
+   close $fd
+   return $data
+}
+
 set webApi/snapshot image/jpeg
 
 proc webApi/snapshot {date jpg} {
 
    global motionConfig
-
-   set fd [open [file join $motionConfig(videos) $date $jpg] [list RDONLY BINARY]]
-   set data [read $fd]
-   close $fd
-
-   return $data
+   dumpStaticBinaryData [file join $motionConfig(videos) $date $jpg]
 }
 
-set webApi/video video/x-msvideo
-#set webApi/video video/mp4
+set webApi/avi video/x-msvideo
 
-proc webApi/video {date avi} {
+proc webApi/avi {date avi} {
 
    global motionConfig
-
-   set fd [file open [file join $motionConfig(videos) $year $month $day $avi] r]
-   set data [read $fd]
-   close $fd
-
-   return $data
+   dumpStaticBinaryData [file join $motionConfig(videos) $date $avi]
 }
 

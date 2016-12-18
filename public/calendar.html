@@ -48,6 +48,26 @@ function getDayEvents (day, callback) {
    command.send(null);
 }
 
+function moveItemToCenter (item) {
+   var browserWidth = window.innerWidth;
+   var browserHeight = window.innerHeight;
+   var width = item.style.width;
+   var height = item.style.height;
+
+   item.style.position = fixed;
+   item.style.zindex = this.style.zindex + 1;
+
+   if (width >= browserWidth)
+      item.style.left = 0;
+   else
+      item.style.left = (browserWidth - width) / 2;
+
+   if (height >= browserHeight)
+      item.style.top = 0;
+   else
+      item.style.top = (browserHeight - height) / 2;
+}
+
 function drawDayEvents (data) {
    var list = document.getElementsByClassName ('events')[0];
 
@@ -93,7 +113,7 @@ function drawDayEvents (data) {
       subtable.appendChild(subrow);
       subrow = document.createElement("tr");
       subitem = document.createElement("td");
-      subitem.innerHTML = '<img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:100%;">';
+      subitem.innerHTML = '<a href="/api/avi?date=' + data[i].date + '&avi=' + data[i].vid + '"><img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:100%;"></a>';
       subrow.appendChild(subitem);
       subtable.appendChild(subrow);
       item.appendChild(subtable);
@@ -119,7 +139,8 @@ function updateDayEvents () {
 }
 
 function resizeDayEvents () {
-   drawDayEvents (currentDayEvents);
+   if (currentDayEvents)
+      drawDayEvents (currentDayEvents);
 }
 
 function getMonthlyCalendar (callback) {
@@ -231,15 +252,19 @@ window.onresize = resizeDayEvents;
 </script>
 </head>
 <body>
+<h1>DVR Video Log</h1>
+<p>
+<a href="/index.html">Home</a>
+ | <a href="/mosaic.html">Live Video</a>
+ | Video Log
 <center>
-<div class="monthlypanel">
- <table class="monthlyborder">
-  <tr><td>
-   <table class="monthly">
-   </table>
-  </td></tr>
- </table>
-</div>
+<table class="monthlyborder">
+ <tr><td>
+  <table class="monthly">
+  </table>
+ </td></tr>
+</table>
+</center>
 <div class="eventsdiv">
 <ul class="events">
 </ul>
