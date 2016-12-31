@@ -1,6 +1,14 @@
 # Generate the data necessary for generating a calendar.
 
-set motionConfig(videos) [file join storage motion videos]
+if {[cget motionCenter] == {}} {
+   # Vanilla TclHttpd config file: assume fixed location.
+   #
+   set motionConfig(videos) [file join storage motion videos]
+} else {
+   # Customized TclHttpd config file: use the configuration.
+   #
+   set motionConfig(videos) [file join [cget motionCenter] videos]
+}
 
 Direct_Url /api webApi
 

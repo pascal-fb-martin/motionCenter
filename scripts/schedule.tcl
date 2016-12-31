@@ -111,7 +111,19 @@ proc schedule {args} {
 
 # Load the local configuration.
 #
-if [file readable /storage/motion/config/schedule.tcl] {
-   source /storage/motion/config/schedule.tcl
+if {[cget motionCenter] == {}} {
+   # Vanilla TclHttpd config file: assume fixed location.
+   #
+   set scheduleConfigDir /storage/motion/config
+} else {
+   # Customized TclHttpd config file: use the configuration.
+   #
+   set scheduleConfigDir [file join [cget motionCenter] config]
+}
+foreach cf [list schedule.rc schedule.tcl] {
+   set cfp [file join $scheduleConfigDir $cf]
+   if {[file readable $cfp]} {
+      source $cfp
+   }
 }
 

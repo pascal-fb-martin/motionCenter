@@ -53,7 +53,21 @@ proc orvibo {command id args} {
    }
 }
 
-if {[file exists /storage/motion/config/orvibo.tcl]} {
-   source /storage/motion/config/orvibo.tcl
+# Load the local configuration.
+#
+if {[cget motionCenter] == {}} {
+   # Vanilla TclHttpd config file: assume fixed location.
+   #
+   set orviboConfigDir /storage/motion/config
+} else {
+   # Customized TclHttpd config file: use the configuration.
+   #
+   set orviboConfigDir [file join [cget motionCenter] config]
+}
+foreach cf [list orvibo.rc orvibo.tcl] {
+   set cfp [file join $orviboConfigDir $cf]
+   if {[file readable $cfp]} {
+      source $cfp
+   }
 }
 
