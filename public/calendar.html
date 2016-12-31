@@ -168,22 +168,25 @@ function updateCalendar () {
       }
 
       // Build the title bar.
+      var year = currentDate.getYear() + 1900;
       var line = document.createElement("tr");
       line.className = 'calendarTopTitle';
       var column = document.createElement("th");
       var button = document.createElement("button");
       button.innerHTML = '<';
+      button.className = 'calendarTitleLeftButton';
       button.onclick = previousMonth;
       column.appendChild(button);
       line.appendChild(column);
       column = document.createElement("th");
-      column.innerHTML = monthName[currentDate.getMonth()];
-      column.className = 'calendarMonthTitle';
+      column.innerHTML = monthName[currentDate.getMonth()] + ' ' + year;
+      column.className = 'calendarTitleMonth';
       column.colSpan = 5;
       line.appendChild(column);
       column = document.createElement("th");
       button = document.createElement("button");
       button.innerHTML = '>';
+      button.className = 'calendarTitleRightButton';
       button.onclick = nextMonth;
       column.appendChild(button);
       line.appendChild(column);
@@ -231,6 +234,7 @@ function updateCalendar () {
                 if (data[i].hasrecords) {
                   button = document.createElement("button");
                   button.innerHTML = ''+i;
+                  button.className = 'calendarButton';
                   button.onclick = updateDayEvents;
                   button.day = ''+i;
                   column.appendChild(button);
@@ -254,20 +258,20 @@ window.onresize = resizeDayEvents;
 <body>
 <h1>DVR Video Log</h1>
 <p>
+<center>
+<div class="menuBar">
 <a href="/index.html">Home</a>
  | <a href="/mosaic.html">Live Video</a>
  | Video Log
-<center>
-<table class="monthlyborder">
+</div>
+<table class="monthlyBorder">
  <tr><td>
   <table class="monthly">
   </table>
  </td></tr>
 </table>
 </center>
-<div class="eventsdiv">
-<ul class="events">
-</ul>
+<div class="events">
 </div>
 </body>
 </html>
