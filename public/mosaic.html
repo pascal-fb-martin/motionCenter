@@ -1,9 +1,47 @@
+<!DOCTYPE html>
 <html>
+<head>
+<script language="javascript" type="text/javascript">
+
+function getCameras (callback) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/camera/list");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         callback((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function drawCameras (data) {
+   var canvas = document.getElementsByClassName ('cameras')[0];
+
+   // Remove current content.
+   while (canvas.childNodes.length > 1) {
+      canvas.removeChild(list.childNodes[1]);
+   }
+
+   for (var i = 0; i < data.length; i++) {
+      var video = document.createElement("img");
+      video.className = "video";
+      video.src = data[i].src;
+      video.width = data[i].src;
+      canvas.appendChild(video);
+   }
+}
+
+function showCameras () {
+   getCameras (drawCameras);
+}
+
+window.onload = showCameras;
+</script>
+</head>
 <body bgcolor=000000>
-<img src=http://watch1.home:8081/ border="0" width=49%></a>
-<img src=http://watch2.home:8081/ border="0" width=49%></a>
-<img src=http://watch3.home:8081/ border="0" width=49%></a>
-<img src=http://watch4.home:8081/ border="0" width=49%></a>
+<div class="cameras" border=0>
+</div>
 </body>
 </html>
 
