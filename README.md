@@ -77,17 +77,30 @@ The motionCenter software should be installed using the install.sh script. It is
 - directory videos is populated with the motion capture files.
 
 The motionCenter system configuration is organized as follow:
-- the tclhttpd configuration (e.g. /etc/default/tclhttpd) defines the installation path for the motionCenter software: Config motionCenter _path_.
-- file config/cameras.rc declares the list of cameras. Each line defines a camera name and URI for one camera. This is used for the live video mosaic. For example:
+
+The tclhttpd configuration (e.g. /etc/default/tclhttpd) is extended to define the installation path for the motionCenter software: Config motionCenter _path_.
+
+The config/cameras.rc file declares the list of cameras. Each line defines a camera name and URI for one camera. This is used for the live video mosaic. For example:
+
    camera cam1 camserver1:8081
+
    camera cam2 camserver2:8081
+
    ...
-- file config/orvibo.rc declares the Orvibo WiFi sockets. Each line defines a name, MAC address and IP address for one socket. For example:
+
+The config/orvibo.rc file declares the Orvibo WiFi sockets. Each line defines a name, MAC address and IP address for one socket. For example:
+
    orvibo declare wiwo1 DEADBEEF0001 192.168.1.151
+
    orvibo declare wiwo2 DEADBEEF0002 192.168.1.152
+
    ...
-- file config/schedule.rc defines the commands to execute at a specific time of the week. Each line defines the time, day of week, a randomization range and the Tcl command to execute. For example:
+
+the config/schedule.rc file defines the commands to execute at a specific time of the week. Each line defines the time, day of week, a randomization range and the Tcl command to execute. For example:
+
    schedule -random 600 -time 05:30 -only Monday -command {orvibo on wiwo1}
+
    schedule -random 600 -time 09:30 -only Monday -command {orvibo off wiwo1}
+
    ...
 
