@@ -42,7 +42,7 @@ function drawCameras (data) {
    for (var i = 0; i < data.length; i++) {
       var video = document.createElement("img");
       video.className = "video";
-      video.src = 'http://' + data[i].src + '/';
+      video.src = 'http://' + data[i].url + '/';
       video.width = imageWidth;
       video.border = 3;
       canvas.appendChild(video);
