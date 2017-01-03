@@ -4,12 +4,12 @@ Direct_Url /api/camera webApiCamera
 
 proc webApiCamera/list {} {
 
-   global cameraConfig
+   global cameradb
 
    set sep "\["
 
    foreach camera [lsort [array names cameradb]] {
-      append result "${sep}{\"name\":\"$name\",\"url\":\"$cameradb($camera)\"}"
+      append result "${sep}{\"name\":\"$camera\",\"url\":\"$cameradb($camera)\"}"
       set sep ","
    }
    append result "\]"
