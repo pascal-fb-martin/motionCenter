@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link rel=stylesheet type="text/css"
+      href="/motioncenter.css" title="Motion Center">
 <script language="javascript" type="text/javascript">
 
 var currentCameras = null;
@@ -18,7 +20,7 @@ function getCameras (callback) {
 }
 
 function drawCameras (data) {
-   var canvas = document.getElementsByClassName ('cameras')[0];
+   var canvas = document.getElementsByClassName ('mosaic')[0];
 
    // Remove current content.
    while (canvas.childNodes.length > 1) {
@@ -45,6 +47,7 @@ function drawCameras (data) {
       video.src = 'http://' + data[i].url + '/';
       video.width = imageWidth;
       video.border = 3;
+      video.style.borderColor = 'white';
       canvas.appendChild(video);
    }
 }
@@ -66,9 +69,16 @@ window.onload = showCameras;
 window.onresize = resizeCameras;
 </script>
 </head>
-<body bgcolor=000000>
-<div class="cameras" border=0>
+<body>
+<center>
+<div class="menuBar">
+<a href="/index.html">Home</a>
+ | Live Video
+ | <a href="/calendar.html">Video Log</a>
 </div>
+<div class="mosaic">
+</div>
+</center>
 </body>
 </html>
 
