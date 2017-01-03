@@ -23,6 +23,8 @@ for file in config/*.rc ; do
   fi
 done
 
+mkdir -p $INSTALLPATH/videos
+
 SYSCONFIG=/etc/default/tclhttpd
 cp -uv $INSTALLPATH/config/tclhttpd.rc $SYSCONFIG
 
