@@ -27,11 +27,11 @@ The typical configuration is to run the web server on the file server (a.k.a. DV
 Each motion capture event is identified by:
 - a date (as a tree of directories: year, month, day).
 - a time of day.
-- a camera identifier.
+- a unique event identifier (server, camera, event number).
 
 Each event is made of two files:
-- a JPEG picture that identifies the detected motion (see Motion's configuration).
 - a video file (only the MPEG4 / AVI format is supported for now).
+- a JPEG picture that identifies the detected motion (see Motion's configuration).
 
 See the file naming convention defined in the Motion configuration section below.
 
@@ -58,15 +58,15 @@ The patch above is required because commit 35240baf0f4a245213ba4bf22e7310df06c66
 
 Motion must be configured to save all detection files to a file server also accessible to the web server. Motion must be configured as follow:
 
-snapshot_filename %Y/%m/%d/hostname:camera-%H:%M:%S-snapshot
+snapshot_filename %Y/%m/%d/%H:%M:%S-*server*:%t:%v-snapshot
 
-picture_filename %Y/%m/%d/hostname:camera-%H:%M:%S-%q
+picture_filename preview
 
-movie_filename %Y/%m/%d/hostname:camera-%H:%M:%S
+movie_filename %Y/%m/%d/%H:%M:%S-*server*:%t:%v
 
-timelapse_filename %Y/%m/%d/hostname:camera-timelapse
+timelapse_filename %Y/%m/%d/*server*:%t-timelapse
 
-where hostname is the name of the machine where motion runs and camera identifies one camera monitored by this motion server. The ":camera" portion is optional, it may be omitted if this motion server monitors only one camera.
+where *server* is the name of the machine where motion runs.
 
 ## Installing and Configuring motionCenter
 
