@@ -40,6 +40,23 @@ proc webApi/monthly {year month} {
    return $result
 }
 
+proc namesplit {name server time {event {}}} {
+   upvar $server server
+   upvar $time time
+   if {$event != {}} {
+      upvar $event event
+   } else {
+      set event 0
+   }
+   set name [split [file rootname $name] {-}]
+   set server [lindex $name 0]
+   set time [lindex $name 1]
+}
+
+proc namebuild {server seconds {event {}}} {
+   return "${server}-[clock format $seconds -format {%H:%M:%S}]"
+}
+
 proc timeCompare {v1 v2} {
    string compare [lindex [split $v1 {-}] 1] [lindex [split $v2 {-}] 1]
 }
@@ -70,17 +87,15 @@ proc webApi/daily {year month day} {
 
    # Retrieve the JPEG associated with each event.
    foreach snapshot [glob -nocomplain *.jpg] {
-      set splitted [split $snapshot {-}]
-      set snapshotdb([lindex $splitted 0]-[lindex $splitted 1]) $snapshot
+      namesplit $snapshot server time
+      set snapshotdb($server-$time) $snapshot
    }
    foreach video $events {
-      set id [split [file rootname $video] {-}]
-      set server [lindex $id 0]
-      set time [lindex $id 1]
+      namesplit $video server time
       set jpg {}
       set cursor [clock scan "$year $month $day $time" -format {%Y %m %d %H:%M:%S}]
       for {set i 0} {$i < 120} {incr i} {
-         set index "${server}-[clock format $cursor -format {%H:%M:%S}]"
+         set index [namebuild server cursor]
          if {[info exists snapshotdb($index)]} {
             set jpg $snapshotdb($index)
             break
