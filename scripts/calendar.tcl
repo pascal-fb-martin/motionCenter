@@ -12,9 +12,16 @@ if {[cget motionCenter] == {}} {
 
 Direct_Url /api webApi
 
-proc webApi/monthly {year month} {
-
+proc pathBuild {seconds} {
    global motionConfig
+   return "$motionConfig(videos)/[clock format $seconds -format {%Y/%m/%d}]"
+}
+
+proc relativePathBuild {seconds} {
+   return "[clock format $seconds -format {%Y/%m/%d}]"
+}
+
+proc webApi/monthly {year month} {
 
    if {[string match {[1-9]} $month]} {
       set month [format {%02d} $month]
@@ -25,7 +32,7 @@ proc webApi/monthly {year month} {
 
    while {[clock format $cursor -format {%m}] == $month} {
 
-      set path "$motionConfig(videos)/[clock format $cursor -format {%Y/%m/%d}]"
+      set path [pathBuild $cursor]
 
       if {[file isdirectory $path]} {
          append result ",{\"hasrecords\":true}"
@@ -110,4 +117,57 @@ proc webApi/avi {date avi} {
    global motionConfig
    dumpStaticBinaryData [file join $motionConfig(videos) $date $avi]
 }
+
+# Today and Yesterday link.
+# As a shortcut, mostly for Kodi access, create and keep up-to-date short
+# links to the directories for todays's and yesterday's dates.
+#
+proc maintainLinks {root force} {
+
+   set pwd [pwd]
+   cd $root
+
+   set forceToday 0
+   set forceYesterday 0
+
+   if {$force} {
+      set forceToday 1
+      set forceYesterday 1
+   } else {
+      set hour [clock format [clock seconds] -format {%H}]
+      if {$hour == "00"} {
+         set forceToday 1
+         set forceYesterday 1
+      }
+      if {! [file exists Today]} {
+         set forceToday 1
+      }
+      if {! [file exists Yesterday]} {
+         set forceYesterday 1
+      }
+   }
+
+   if {$forceToday} {
+      file delete -force Today
+      set todayDir [relativePathBuild [clock seconds]]
+      if {[file exists $todayDir]} {
+         file link -symbolic Today $todayDir
+      }
+   }
+
+   if {$forceYesterday} {
+      file delete -force Yesterday
+      set yesterdayDir [relativePathBuild [clock add [clock seconds] -1 day]]
+      if {[file exists $yesterdayDir]} {
+         file link -symbolic Yesterday $yesterdayDir
+      }
+   }
+
+   cd $pwd
+
+   # Check again every 1/2 hour.
+   after 1800000 {maintainLinks $root 0}
+}
+
+maintainLinks $motionConfig(videos) 1
 
