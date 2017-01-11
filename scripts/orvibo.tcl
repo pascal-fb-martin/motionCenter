@@ -32,7 +32,11 @@ proc orvibo {command id args} {
       declare {
          set orvibodb(${id}.id) $id
          set orvibodb(${id}.mac) [lindex $args 0]
-         set orvibodb(${id}.ip) [lindex $args 1]
+         if {[llength $args] >= 2} {
+            set orvibodb(${id}.ip) [lindex $args 1]
+         } else {
+            set orvibodb(${id}.ip) $id
+         }
       }
 
       off {
