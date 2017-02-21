@@ -24,6 +24,13 @@ proc camera {name url} {
    set cameradb($name) $url
 }
 
+# Provide a web API for the cameras to declare themselves.
+# This makes the server's configuration dynamic.
+#
+proc webApiCamera/declare {name url} {
+   camera $name $url
+}
+
 # Load the local configuration.
 #
 if {[cget motionCenter] == {}} {

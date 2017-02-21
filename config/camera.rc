@@ -1,9 +1,3 @@
-
-
-camera watch1 watch1.home:8081
-camera watch2 watch2.home:8081
-camera watch3 watch3.home:8081
-camera watch4 watch4.home:8081
-camera watch5 watch5.home:8081
-camera watch6 watch6.home:8081
+# Each camera now declares itself, so this configuration has become dynamic.
+# Declare a camera here only if it cannot be configured to declare itself.
 
