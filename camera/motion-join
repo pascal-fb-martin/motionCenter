@@ -1,0 +1,76 @@
+#!/bin/bash
+#
+# A script to join this local machine as part of the motionCenter's swarm.
+#
+# This script publishes the camera periodically, so that we can survive
+# un-ordered restart, either the server restarting on its own, or all
+# the machines restarting in a random order (after a power outage).
+
+rm -f /var/run/motionjoin.pid
+echo $BASHPID > /var/run/motionjoin.pid
+
+# Commands used by this script (do not assume default path)
+#
+GREP=/bin/grep
+AWK=/usr/bin/awk
+IP=/sbin/ip
+CUT=/usr/bin/cut
+WGET=/usr/bin/wget
+SLEEP=/bin/sleep
+HOSTNAME=/bin/hostname
+PING=/bin/ping
+ECHO=/bin/echo
+
+# Hardcoded defaults.
+#
+WEBSRV=mymotioncenter
+WEBSRVPORT=8015
+WEBMOTION=8081
+
+# Search for the local system configuration.
+#
+if [ -e /etc/default/motionCenter ] ; then
+   . /etc/default/motionCenter
+fi
+if [ -e /etc/motion/motion.conf ] ; then
+   WEBMOTION=$($GREP stream_port /etc/motion/motion.conf | $AWK '{print $2}')
+fi
+
+WEBURL="http://$WEBSRV:$WEBSRVPORT/api/camera/declare"
+MJLOG=/var/lib/motion/motionjoin.log
+
+$ECHO "`date` motion-join started on $($HOSTNAME), server $WEBSRV" >> $MJLOG
+
+# Make sure we can write some output (or else wget complains?) but that
+# we don't do it on disk of SD (wears the SD out).
+#
+cd /dev/shm
+WGETOUT=wget$$
+
+# The main registration loop.
+# Iterate at "high" speed if the server could not be contacted,
+# iterate at "low" speed after the server has been contacted. 
+# This two-speed approach is intended to make registration faster when 
+# the system starts or restart.
+# Log changes of state (first success, new failure, success after failure).
+#
+WASOK=2
+while : ; do
+   $SLEEP 10
+   MYNAME=$($HOSTNAME)
+   MYIP=$($IP -o -4 addr list eth0 | $AWK '{print $4}' | $CUT -d/ -f1)
+   rm -f $WGETOUT
+   $WGET -nv -o $WGETOUT $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION > /dev/null 2>> $MJLOG
+   WGETSTATUS=$?
+   if [ $WGETSTATUS -eq 0 ] ; then
+      if [ $WASOK -ne 1 ] ; then
+         $ECHO "`date` registered $MYNAME as $MYIP to $WEBSRV" >> $MJLOG
+         WASOK=1
+      fi
+      $SLEEP 50
+   elif [ $WASOK -ne 0 ] ; then
+      $ECHO "`date` $WGET $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION failed with status $WGETSTATUS" >> $MJLOG
+      WASOK=0
+   fi
+done
+

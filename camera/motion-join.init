@@ -1,0 +1,58 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          motionjoin
+# Required-Start:    $local_fs $syslog $network
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Register motion camera
+# Description: Join the local machine to the list of cameras in motionCenter.
+### END INIT INFO
+
+PATH=/sbin:/bin
+
+. /lib/lsb/init-functions
+
+NAME=motionjoin
+DESC="motionCenter registration"
+
+RET=0
+
+case "$1" in
+  start)
+	# This is ugly, but there is no risk with running more than one.
+	rm -f /var/run/motionjoin.pid
+
+        log_daemon_msg "Starting $DESC" "$NAME"
+        if start-stop-daemon --start --pidfile /var/run/motionjoin.pid --startas /usr/local/bin/motion-join -b --chuid motion ; then
+                log_end_msg 0
+        else
+                log_end_msg 1
+                RET=1
+        fi
+        ;;
+  restart|reload|force-reload)
+        echo "Error: argument '$1' not supported" >&2
+        exit 3
+        ;;
+  stop)
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        if start-stop-daemon --stop --pidfile /var/run/motionjoin.pid --retry 30 ; then
+                log_end_msg 0
+		rm -f /var/run/motionjoin.pid
+        else
+                log_end_msg 1
+                RET=1
+        fi
+        ;;
+  status)
+        # No-op
+        ;;
+  *)
+        echo "Usage: $0 start|stop" >&2
+        exit 3
+        ;;
+esac
+
+exit $RET
+
