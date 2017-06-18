@@ -43,13 +43,16 @@ function drawCameras (data) {
    var imageWidth = Math.floor((width / imageColumns) * 0.97) - 6;
 
    for (var i = 0; i < data.length; i++) {
+      var link = document.createElement("a");
+      link.href = '/live.html?camera=' + data[i].name;
       var video = document.createElement("img");
       video.className = "video";
       video.src = 'http://' + data[i].url + '/';
       video.width = imageWidth;
       video.border = 3;
       video.style.borderColor = 'white';
-      canvas.appendChild(video);
+      link.appendChild(video);
+      canvas.appendChild(link);
    }
 }
 
