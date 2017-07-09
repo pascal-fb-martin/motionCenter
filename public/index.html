@@ -3,6 +3,52 @@
 <title>DVR Home</title>
 <link rel=stylesheet type="text/css"
       href="/motioncenter.css" title="Motion Center">
+<script language="javascript" type="text/javascript">
+
+var currentCameras = null;
+
+function getCameras (callback) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/camera/list");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         callback((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function listCameras (data) {
+   var table = document.getElementsByClassName ('cameras')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      column.innerHTML = data[i].name;
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      var link = document.createElement("a");
+      link.href = 'http://' + data[i].url + '/';
+      link.innerHTML = link.href;
+      column.appendChild(link);
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+}
+
+function showCameras () {
+   getCameras (function (data) {
+      listCameras(data);
+      currentCameras = data;
+   });
+}
+
+window.onload = showCameras;
+</script>
 </head>
 <body bgcolor=white text=black>
 <center>
@@ -11,6 +57,14 @@ Home
  | <a href="/mosaic.html">Live Video</a>
  | <a href="/calendar.html">DVR Log</a>
 </div>
+<p>
+<table class="cameras">
+ <tr>
+  <th>Camera</th>
+  <th>URL</th>
+ </tr>
+</table>
+</p>
 </center>
 </body>
 </html>
