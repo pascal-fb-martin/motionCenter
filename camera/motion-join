@@ -45,7 +45,7 @@ $ECHO "`date` motion-join started on $($HOSTNAME), server $WEBSRV" >> $MJLOG
 # we don't do it on disk of SD (wears the SD out).
 #
 cd /dev/shm
-WGETOUT=wget$$
+WGETOUT=wgetlog
 
 # The main registration loop.
 # Iterate at "high" speed if the server could not be contacted,
@@ -57,10 +57,17 @@ WGETOUT=wget$$
 WASOK=2
 while : ; do
    $SLEEP 10
-   MYNAME=$($HOSTNAME)
+
+   # Do not use the host name negociated through DHCP.
+   # The DHCP server will eventually accept the name this machine requests.
+   # (The name problem occurs because the Ethernet address of some ARM
+   # chipsets is allocated randomly at boot. This confuses the DHCP server
+   # as it causes a name conflict until the previous lease expires.)
+   MYNAME=`cat /etc/hostname`
+
    MYIP=$($IP -o -4 addr list eth0 | $AWK '{print $4}' | $CUT -d/ -f1)
    rm -f $WGETOUT
-   $WGET -nv -o $WGETOUT $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION > /dev/null 2>> $MJLOG
+   $WGET -nv --tries=5 --timeout=10 -o $WGETOUT -O - $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION > /dev/null 2>> $MJLOG
    WGETSTATUS=$?
    if [ $WGETSTATUS -eq 0 ] ; then
       if [ $WASOK -ne 1 ] ; then

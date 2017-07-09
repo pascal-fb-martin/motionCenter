@@ -22,6 +22,8 @@ case "$1" in
   start)
 	# This is ugly, but there is no risk with running more than one.
 	rm -f /var/run/motionjoin.pid
+	rm -f /var/lib/motion/motionjoin.log
+	rm -f /dev/shm/wgetlog
 
         log_daemon_msg "Starting $DESC" "$NAME"
         if start-stop-daemon --start --pidfile /var/run/motionjoin.pid --startas /usr/local/bin/motion-join -b --chuid motion ; then
