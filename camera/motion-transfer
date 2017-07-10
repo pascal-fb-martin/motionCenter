@@ -1,0 +1,26 @@
+#!/bin/bash
+#
+# Transfer all video files to the DVR server, and clean out all empty
+# directories.
+#
+# Because the transfer takes some time (video files can be big), it is
+# processed in the background. As a side effect we do not do when it
+# completes, so we cleanup the new empty directories on the next call.
+#
+src=/dev/shm/videos
+dst=/storage/motion/videos
+cd $src
+cleanlinks >/dev/null 2>&1
+if [ $# -gt 0 ] ; then
+  files=$*
+else
+  files=`find -P $src -type f`
+fi
+if [ "X$files" != "X" ] ; then
+   for file in $files ; do
+      dir=`dirname $file`
+      dir=`expr "$dir" : '/dev/shm/videos/\([0-9/].*\)'`
+      mv -f $file $dst/$dir &
+   done
+fi
+
