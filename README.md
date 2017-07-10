@@ -42,10 +42,10 @@ See the file naming convention defined in the Motion configuration section below
 ## Installation Overview
 
 Installing motionCenter involves the following steps:
-1- Install and configure tclhtppd on the server.
-2- Install and configure motionCenter on the server.
-3- Install and configure motion on each camera system.
-4- Install and configure motionCenter scripts on each camera system.
+1. Install and configure tclhtppd on the server.
+2. Install and configure motionCenter on the server.
+3. Install and configure motion on each camera system.
+4. Install and configure motionCenter scripts on each camera system.
 
 ## tclhttpd Configuration
 
