@@ -20,7 +20,9 @@ if [ "X$files" != "X" ] ; then
    for file in $files ; do
       dir=`dirname $file`
       dir=`expr "$dir" : '/dev/shm/videos/\([0-9/].*\)'`
-      mv -f $file $dst/$dir &
+      mkdir -p $dst/$dir
+      target=`basename $file`
+      mv -f $file $dst/$dir/$target &
    done
 fi
 
