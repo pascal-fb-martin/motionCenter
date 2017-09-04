@@ -62,6 +62,21 @@ function showPlugs () {
    });
 }
 
+function addPlug () {
+   var form = document.forms;
+   var name = form.plug.plugname.value;
+   var mac = form.plug.plugmac.value;
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/plug/declare?name=" + name + '&mac=' + mac);
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         listPlugs((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
 window.onload = showPlugs;
 </script>
 </head>
@@ -77,6 +92,17 @@ window.onload = showPlugs;
 <table class="plugs">
 </table>
 </p>
+<form name="plug">
+<table>
+ <tr>
+   <td>Name: </td>
+   <td><input type="text" size="12" name="plugname"></input></td>
+   <td>, MAC Address: </td>
+   <td><input type="text" size="12" name="plugmac" placeholder="Hexadecimal"></input></td>
+   <td><button class="plugButton" onclick="addPlug()">Add</button></td>
+ </tr>
+</table>
+</form>
 </center>
 </body>
 </html>

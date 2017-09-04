@@ -30,12 +30,12 @@ proc webApiPlug/set {name state} {
    orvibo $state $name
 }
 
-proc webApiPlug/declare {name properties} {
-   eval orvibo declare $name $properties
+proc webApiPlug/declare {name mac} {
+   orvibo declare $name $mac
 
    global orviboConfigDir
    set fd [open [file join $orviboConfigDir orvibo-live.tcl] a]
-   puts $fd "orvibo declare $name [join $properties]"
+   puts $fd "orvibo declare $name $mac"
    close $fd
 
    _orviboList
