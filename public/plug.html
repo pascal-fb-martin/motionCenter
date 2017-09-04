@@ -1,0 +1,83 @@
+<html>
+<head>
+<title>Socket Plug Control</title>
+<link rel=stylesheet type="text/css"
+      href="/motioncenter.css" title="Motion Center">
+<script language="javascript" type="text/javascript">
+
+function getPlugs (callback) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/plug/list");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         callback((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function plugControl () {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/plug/set?name=" + this.plugname + "&state=" + this.plugcmd);
+   command.send(null);
+}
+
+function newButton (label, device, command) {
+      var button = document.createElement("button");
+      button.innerHTML = label;
+      button.className = 'plugButton';
+      button.onclick = plugControl;
+      button.plugname = device;
+      button.plugcmd = command;
+      return button;
+}
+
+function listPlugs (data) {
+   var table = document.getElementsByClassName ('plugs')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      column.innerHTML = data[i].name;
+      column.className = 'plugName';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('On', data[i].name, 'on'));
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('Off', data[i].name, 'off'));
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+}
+
+function showPlugs () {
+   getPlugs (function (data) {
+      listPlugs(data);
+   });
+}
+
+window.onload = showPlugs;
+</script>
+</head>
+<body bgcolor=white text=black>
+<center>
+<div class="menuBar">
+ <a href="/index.html">Home</a>
+ | <a href="/mosaic.html">Live Video</a>
+ | <a href="/calendar.html">DVR Log</a>
+ | Plug Control
+</div>
+<p>
+<table class="plugs">
+</table>
+</p>
+</center>
+</body>
+</html>
+

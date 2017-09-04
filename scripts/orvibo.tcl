@@ -2,6 +2,46 @@
 
 package require udp
 
+# -- Orvibo S20 Web User Interface. --------------------------------------
+
+Direct_Url /api/plug webApiPlug
+
+proc _orviboList {} {
+
+   global orvibodb
+
+   set sep "\["
+
+   foreach id [lsort [array names orvibodb *.id]] {
+      set id $orvibodb(${id})
+      append result "${sep}{\"name\":\"$id\"}"
+      set sep ","
+   }
+   append result "\]"
+
+   return $result
+}
+
+proc webApiPlug/list {} {
+   _orviboList
+}
+
+proc webApiPlug/set {name state} {
+   orvibo $state $name
+}
+
+proc webApiPlug/declare {name properties} {
+   eval orvibo declare $name $properties
+
+   global orviboConfigDir
+   set fd [open [file join $orviboConfigDir orvibo-live.tcl] a]
+   puts $fd "orvibo declare $name [join $properties]"
+   close $fd
+
+   _orviboList
+}
+
+
 # -- Orvibo S20 Control. -------------------------------------------------
 proc _orviboSend {id packet} {
 
@@ -68,7 +108,7 @@ if {[cget motionCenter] == {}} {
    #
    set orviboConfigDir [file join [cget motionCenter] config]
 }
-foreach cf [list orvibo.rc orvibo.tcl] {
+foreach cf [list orvibo.rc orvibo.tcl orvibo-live.tcl] {
    set cfp [file join $orviboConfigDir $cf]
    if {[file readable $cfp]} {
       source $cfp
