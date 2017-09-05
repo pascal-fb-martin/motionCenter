@@ -23,13 +23,18 @@ function plugControl () {
    command.send(null);
 }
 
-function newButton (label, device, command) {
+function newButton (label, device, command, disabled) {
       var button = document.createElement("button");
       button.innerHTML = label;
-      button.className = 'plugButton';
+      if (disabled) {
+         button.className = 'plugButton plugButtonDisabled';
+      } else {
+         button.className = 'plugButton plugButtonEnabled';
+      }
       button.onclick = plugControl;
       button.plugname = device;
       button.plugcmd = command;
+      button.disabled = disabled;
       return button;
 }
 
@@ -39,17 +44,37 @@ function listPlugs (data) {
    for (var i = 0; i < data.length; i++) {
       var line = document.createElement("tr");
 
+      var disabled = (data[i].ip == null);
+
       var column = document.createElement("td");
       column.innerHTML = data[i].name;
       column.className = 'plugName';
       line.appendChild(column);
 
       column = document.createElement("td");
-      column.appendChild(newButton('On', data[i].name, 'on'));
+      if (data[i].ip != null) {
+         column.innerHTML = '('+data[i].ip+')';
+      } else {
+         column.innerHTML = '';
+      }
+      column.className = 'plugName';
       line.appendChild(column);
 
       column = document.createElement("td");
-      column.appendChild(newButton('Off', data[i].name, 'off'));
+      if (data[i].state) {
+         column.innerHTML = "On";
+      } else {
+         column.innerHTML = "Off";
+      }
+      column.className = 'plugName';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('On', data[i].name, 'on', disabled));
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('Off', data[i].name, 'off', disabled));
       line.appendChild(column);
 
       table.appendChild(line);
@@ -95,11 +120,11 @@ window.onload = showPlugs;
 <form name="plug">
 <table>
  <tr>
-   <td>Name: </td>
+   <td class="plugName">Name: </td>
    <td><input type="text" size="12" name="plugname"></input></td>
-   <td>, MAC Address: </td>
+   <td class="plugName">, MAC Address: </td>
    <td><input type="text" size="12" name="plugmac" placeholder="Hexadecimal"></input></td>
-   <td><button class="plugButton" onclick="addPlug()">Add</button></td>
+   <td><button class="plugButton plugButtonEnabled" onclick="addPlug()">Add</button></td>
  </tr>
 </table>
 </form>

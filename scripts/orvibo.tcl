@@ -14,7 +14,13 @@ proc _orviboList {} {
 
    foreach id [lsort [array names orvibodb *.id]] {
       set id $orvibodb(${id})
-      append result "${sep}{\"name\":\"$id\"}"
+      set ip $orvibodb(${id}.ip)
+      if {$ip != {}} {
+         set s $orvibodb(${id}.state)
+         append result "${sep}{\"name\":\"$id\",\"ip\":\"$ip\",\"state\":$s}"
+      } else {
+         append result "${sep}{\"name\":\"$id\"}"
+      }
       set sep ","
    }
    append result "\]"
@@ -43,15 +49,54 @@ proc webApiPlug/declare {name mac} {
 
 
 # -- Orvibo S20 Control. -------------------------------------------------
+
+set orvibonet [udp_open 10000 reuse]
+fconfigure $orvibonet -broadcast 1 -buffering none -encoding binary
+
+proc _orviboUpdate {mac ip state} {
+   global orvibodb
+   if {[info exists orvibodb(${mac}.macindex)]} {
+      set id $orvibodb(${mac}.macindex)
+      set orvibodb(${id}.ip) $ip
+      set orvibodb(${id}.state) [string match 01 $state]
+   }
+}
+
+proc _orviboReceive socket {
+   set data [binary encode hex [read $socket]]
+   set peer [udp_conf $socket -peer]
+
+   # If the message is a discovery or command response,
+   # update its IP address and state.
+
+   if {[string match -nocase 6864002A716100* $data]} {
+      set mac [string toupper [string range $data 14 25]]
+      set state [string range $data 82 83]
+      _orviboUpdate $mac [lindex $peer 0] $state
+   }
+
+   if {[string match -nocase 6864001773* $data]} {
+      set mac [string toupper [string range $data 12 23]]
+      set state [string range $data 44 45]
+      _orviboUpdate $mac [lindex $peer 0] $state
+   }
+}
+
+fileevent $orvibonet readable [list _orviboReceive $orvibonet]
+
+proc _orviboRefresh socket {
+   fconfigure $socket -remote [list 255.255.255.255 10000]
+   puts -nonewline $socket [binary decode hex 686400067161]
+
+   after 60000 _orviboRefresh $socket
+}
+
 proc _orviboSend {id packet} {
 
-   global orvibodb
+   global orvibodb orvibonet
 
-   set port 10000
-   set s [udp_open $port reuse]
-   fconfigure $s -remote [list $orvibodb(${id}.ip) $port] -encoding binary
-   puts -nonewline $s [binary decode hex $packet]
-   close $s
+   fconfigure $orvibonet -remote [list $orvibodb(${id}.ip) 10000]
+   puts -nonewline $orvibonet [binary decode hex $packet]
 }
    
 proc _orviboSubscribe {id} {
@@ -71,11 +116,13 @@ proc orvibo {command id args} {
    switch $command {
       declare {
          set orvibodb(${id}.id) $id
-         set orvibodb(${id}.mac) [lindex $args 0]
+         set mac [lindex $args 0]
+         set orvibodb(${id}.mac) $mac
+         set orvibodb(${mac}.macindex) $id
          if {[llength $args] >= 2} {
             set orvibodb(${id}.ip) [lindex $args 1]
          } else {
-            set orvibodb(${id}.ip) $id
+            set orvibodb(${id}.ip) {}
          }
       }
 
@@ -114,4 +161,6 @@ foreach cf [list orvibo.rc orvibo.tcl orvibo-live.tcl] {
       source $cfp
    }
 }
+
+_orviboRefresh $orvibonet
 
