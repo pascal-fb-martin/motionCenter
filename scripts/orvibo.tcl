@@ -47,6 +47,18 @@ proc webApiPlug/declare {name mac} {
    _orviboList
 }
 
+proc webApiPlug/new {} {
+   global orvibonew
+   set sep "\["
+   foreach id [lsort [array names orvibonew *.mac]] {
+      set mac $orvibonew($id)
+      set ip $orvibonew(${mac}.ip)
+      append result "${sep}{\"mac\":\"$mac\",\"ip\":\"$ip\"}"
+      set sep ","
+   }
+   append result "\]"
+   return $result
+}
 
 # -- Orvibo S20 Control. -------------------------------------------------
 
@@ -54,11 +66,39 @@ set orvibonet [udp_open 10000 reuse]
 fconfigure $orvibonet -broadcast 1 -buffering none -encoding binary
 
 proc _orviboUpdate {mac ip state} {
-   global orvibodb
+   global orvibodb orvibonew
    if {[info exists orvibodb(${mac}.macindex)]} {
       set id $orvibodb(${mac}.macindex)
       set orvibodb(${id}.ip) $ip
       set orvibodb(${id}.state) [string match 01 $state]
+      set orvibodb(${id}.timestamp) [clock seconds]
+   } else {
+      set orvibonew(${mac}.mac) $mac
+      set orvibonew(${mac}.ip) $ip
+      set orvibonew(${mac}.timestamp) [clock seconds]
+   }
+}
+
+proc _orviboRetire {delay} {
+
+   global orvibodb orvibonew
+
+   set retirenow [expr [clock seconds] - $delay]
+
+   foreach id [array names orvibodb *.id] {
+      set id $orvibodb(${id})
+      if {$orvibodb(${id}.timestamp) < $retirenow} {
+         set orvibodb(${id}.ip) {}
+      }
+   }
+
+   foreach mac [array names orvibonew *.mac] {
+      set mac $orvibonew($mac)
+      if {$orvibonew(${mac}.timestamp) < $retirenow} {
+         unset orvibonew(${mac}.mac)
+         unset orvibonew(${mac}.ip)
+         unset orvibonew(${mac}.timestamp)
+      }
    }
 }
 
@@ -84,10 +124,14 @@ proc _orviboReceive socket {
 
 fileevent $orvibonet readable [list _orviboReceive $orvibonet]
 
-proc _orviboRefresh socket {
+proc _orviboSense socket {
    fconfigure $socket -remote [list 255.255.255.255 10000]
    puts -nonewline $socket [binary decode hex 686400067161]
+}
 
+proc _orviboRefresh socket {
+   _orviboSense $socket
+   _orviboRetire 180
    after 60000 _orviboRefresh $socket
 }
 
@@ -124,6 +168,17 @@ proc orvibo {command id args} {
          } else {
             set orvibodb(${id}.ip) {}
          }
+         set orvibodb(${id}.timestamp) [clock seconds]
+
+         global orvibonew
+         if {[info exists orvibonew(${mac}.mac)]} {
+            unset orvibonew(${mac}.mac)
+            unset orvibonew(${mac}.ip)
+         }
+
+         # Force an immediate discovery of this new plug.
+         global orvibonet
+         _orviboSense $orvibonet
       }
 
       off {

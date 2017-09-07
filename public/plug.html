@@ -5,6 +5,114 @@
       href="/motioncenter.css" title="Motion Center">
 <script language="javascript" type="text/javascript">
 
+function newButton (label, device, command, disabled) {
+      var button = document.createElement("button");
+      button.innerHTML = label;
+      button.className = 'plugButtonDisabled plugButton ' + device + '_button';
+      button.onclick = plugControl;
+      button.plugname = device;
+      button.plugcmd = command;
+      button.disabled = true;
+      return button;
+}
+
+function updatePlugs (data) {
+   for (var i = 0; i < data.length; i++) {
+
+      var ip = data[i].ip;
+      var state = 'Off';
+      var disabled = false;
+      var after = 'plugButtonEnabled';
+      if (ip != null) {
+         if (data[i].state) {
+            state = 'On';
+         }
+      } else {
+         state = '';
+         disabled = true;
+         after = 'plugButtonDisabled';
+      }
+
+      var items = document.getElementsByClassName (data[i].name+'_state');
+      for (var j = 0; j < items.length; j++) {
+         items[j].innerHTML = state;
+      }
+
+      items = document.getElementsByClassName (data[i].name+'_ip');
+      for (var j = 0; j < items.length; j++) {
+         if (ip != null) {
+            items[j].innerHTML = '(' + ip + ')';
+         } else {
+            items[j].innerHTML = '';
+         }
+      }
+
+      items = document.getElementsByClassName (data[i].name+'_button');
+      for (var j = 0; j < items.length; j++) {
+         var before = 'plugButtonEnabled';
+         if (items[j].disabled) {
+            before = 'plugButtonDisabled';
+         }
+         items[j].disabled = disabled;
+         items[j].className = items[j].className.replace (before, after);
+      }
+   }
+}
+
+function listPlugs (data) {
+   var table = document.getElementsByClassName ('plugs')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      column.innerHTML = data[i].name;
+      column.className = 'plugName';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = '';
+      column.className = 'plugName '+ data[i].name + '_ip';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = '';
+      column.className = 'plugName '+ data[i].name + '_state';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('On', data[i].name, 'on'));
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.appendChild(newButton('Off', data[i].name, 'off'));
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+   updatePlugs (data);
+}
+
+function listDiscovery (data) {
+   var table = document.getElementsByClassName ('discovery')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      column.innerHTML = data[i].mac;
+      column.className = 'plugName';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = '('+data[i].ip+')';
+      column.className = 'plugName';
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+}
+
 function getPlugs (callback) {
    var command = new XMLHttpRequest();
    command.open("GET", "/api/plug/list");
@@ -17,74 +125,36 @@ function getPlugs (callback) {
    command.send(null);
 }
 
-function plugControl () {
+function getPlugsUpdate () {
+   getPlugs (function (data) {
+      updatePlugs(data);
+   });
+}
+
+function getDiscovery () {
    var command = new XMLHttpRequest();
-   command.open("GET", "/api/plug/set?name=" + this.plugname + "&state=" + this.plugcmd);
-   command.send(null);
-}
-
-function newButton (label, device, command, disabled) {
-      var button = document.createElement("button");
-      button.innerHTML = label;
-      if (disabled) {
-         button.className = 'plugButton plugButtonDisabled';
-      } else {
-         button.className = 'plugButton plugButtonEnabled';
+   command.open("GET", "/api/plug/new");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         listDiscovery((JSON.parse(command.responseText)));
       }
-      button.onclick = plugControl;
-      button.plugname = device;
-      button.plugcmd = command;
-      button.disabled = disabled;
-      return button;
-}
-
-function listPlugs (data) {
-   var table = document.getElementsByClassName ('plugs')[0];
-
-   for (var i = 0; i < data.length; i++) {
-      var line = document.createElement("tr");
-
-      var disabled = (data[i].ip == null);
-
-      var column = document.createElement("td");
-      column.innerHTML = data[i].name;
-      column.className = 'plugName';
-      line.appendChild(column);
-
-      column = document.createElement("td");
-      if (data[i].ip != null) {
-         column.innerHTML = '('+data[i].ip+')';
-      } else {
-         column.innerHTML = '';
-      }
-      column.className = 'plugName';
-      line.appendChild(column);
-
-      column = document.createElement("td");
-      if (data[i].state) {
-         column.innerHTML = "On";
-      } else {
-         column.innerHTML = "Off";
-      }
-      column.className = 'plugName';
-      line.appendChild(column);
-
-      column = document.createElement("td");
-      column.appendChild(newButton('On', data[i].name, 'on', disabled));
-      line.appendChild(column);
-
-      column = document.createElement("td");
-      column.appendChild(newButton('Off', data[i].name, 'off', disabled));
-      line.appendChild(column);
-
-      table.appendChild(line);
    }
+   command.send(null);
 }
 
 function showPlugs () {
    getPlugs (function (data) {
       listPlugs(data);
    });
+   getDiscovery();
+   setInterval (getPlugsUpdate, 3000);
+}
+
+function plugControl () {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/plug/set?name=" + this.plugname + "&state=" + this.plugcmd);
+   command.send(null);
 }
 
 function addPlug () {
@@ -128,6 +198,9 @@ window.onload = showPlugs;
  </tr>
 </table>
 </form>
+</p>
+<table class="discovery">
+</table>
 </center>
 </body>
 </html>
