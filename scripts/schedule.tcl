@@ -2,6 +2,33 @@
 # times of day, with an optional randomized variance and the ability
 # to specify some days of the week.
 
+# -- Schedule Web User Interface. ----------------------------------------
+
+Direct_Url /api/schedule webApiSchedule
+
+proc webApiSchedule/list {} {
+
+   global scheduledb
+
+   set sep "\["
+
+   foreach id [lsort [array name scheduledb *.id]] {
+      set id $scheduledb($id)
+      set c $scheduledb($id.command)
+      set d $scheduledb($id.days)
+      set t $scheduledb($id.timeofday)
+      set r $scheduledb($id.random)
+      append result "${sep}{\"id\":\"$id\",\"days\":\"$d\",\"time\":\"$t\",\"random\":$r,\"cmd\":\"$c\"}"
+      set sep ","
+   }
+   append result "\]"
+
+   return $result
+}
+
+
+# -- Schedule Configuration and Execution. -------------------------------
+
 set scheduleid 0
 
 proc eventlog {text} {
@@ -97,6 +124,7 @@ proc schedule {args} {
    set scheduledb($id.command) $command
    set scheduledb($id.deadline) $next
    set scheduledb($id.random) $random
+   set scheduledb($id.timeofday) $timeofday
    set scheduledb($id.days) $daysofweek
 
    # Start the initial timer.

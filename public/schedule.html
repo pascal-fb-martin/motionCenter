@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>Schedule</title>
+<link rel=stylesheet type="text/css"
+      href="/motioncenter.css" title="Motion Center">
+<script language="javascript" type="text/javascript">
+
+function listSchedule (data) {
+   var table = document.getElementsByClassName ('schedule')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      if (data[i].days) {
+         column.innerHTML = data[i].days;
+      } else {
+         column.innerHTML = "all";
+      }
+      column.className = 'scheduleItem SchDays';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].time;
+      column.className = 'scheduleItem SchTime';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].random;
+      column.className = 'scheduleItem SchRandom';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].cmd;
+      column.className = 'scheduleItem SchCommand';
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+}
+
+function getSchedule (callback) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/schedule/list");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         callback((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function showSchedule () {
+   getSchedule (function (data) {
+      listSchedule(data);
+   });
+}
+
+window.onload = showSchedule;
+</script>
+</head>
+<body bgcolor=white text=black>
+<center>
+<div class="menuBar">
+ <a href="/index.html">Home</a>
+ | <a href="/mosaic.html">Live Video</a>
+ | <a href="/calendar.html">DVR Log</a>
+ | <a href="/plug.html">Plug Control</a>
+ | Schedule
+</div>
+<p>
+<table class="schedule">
+  <tr>
+     <th>Days</th>
+     <th>Time</th>
+     <th>Random</th>
+     <th>Command</th>
+  </tr>
+</table>
+</center>
+</body>
+</html>
+
