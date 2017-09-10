@@ -1,0 +1,83 @@
+#!/bin/sh
+# chkconfig: 235 99 10
+# description: Start or stop the Tclhttpd server
+#
+### BEGIN INIT INFO
+# Provides: tclhttpd
+# Required-Start: $network
+# Required-Stop: $network
+# Default-Start: 2 3 5
+# Default-Stop: 0 1 6
+# Description: Start or stop the Tclhttpd server
+### END INIT INFO
+
+# Edwin A. Suominen: Hacked from Apache httpd init script, licensed likewise.
+# Pascal Martin: modified for Debian.
+
+binDir=/opt/tclhttpd/bin
+
+NAME=tclhttpd
+PIDFILE=/var/run/tclhttpd.pid
+DESC="the Tcl HTTP Server"
+USER=motion
+GROUP=motion
+CONFIG=/etc/default/$NAME
+DAEMON=/usr/bin/tclsh
+DAEMON_OPT="$binDir/httpd.tcl -config $CONFIG"
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Source function library.
+. /lib/lsb/init-functions
+
+RETVAL=0
+
+do_setup () {
+        # Ensure we have proper /etc/default/tclhttpd setup
+        if [ ! -e $CONFIG ] ; then
+            cp $binDir/tclhttpd.rc $CONFIG
+        fi
+        chmod a+r $CONFIG
+
+	rm -f /tmp/tclhttpd.default
+}
+
+do_start () {
+echo "Starting: $DAEMON $DAEMON_OPT 1"
+        log_daemon_msg "Starting $DESC" "$NAME"
+echo "Starting: $DAEMON $DAEMON_OPT"
+        start-stop-daemon --start --quiet --pidfile "$PIDFILE" --oknodo --chuid $USER --group=$GROUP --make-pidfile --background --no-close --exec $DAEMON -- $DAEMON_OPT 2>>/tmp/tclhttpd.errors >>/tmp/tclhttpd.log
+        RETVAL=$?
+        log_end_msg $RETVAL
+}
+
+do_stop () {
+        log_daemon_msg "Stopping $DESC" "$NAME"
+        start-stop-daemon --stop --quiet --retry 5 --oknodo --remove-pidfile --pidfile $PIDFILE
+        RETVAL=$?
+        log_end_msg $RETVAL
+}
+
+case "$1" in
+'start')
+        do_setup
+        do_start
+        ;;
+'stop')
+        do_stop
+        ;;
+'status')
+        ;;
+'restart')
+        do_setup
+        do_stop
+        do_start
+        ;;
+*)
+        echo "Usage for tchttpd: $0 { start | stop | status | restart }"
+        RETVAL=1
+        ;;
+esac
+exit $RETVAL
+
