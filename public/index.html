@@ -5,8 +5,6 @@
       href="/motioncenter.css" title="Motion Center">
 <script language="javascript" type="text/javascript">
 
-var currentCameras = null;
-
 function getCameras (callback) {
    var command = new XMLHttpRequest();
    command.open("GET", "/api/camera/list");
@@ -43,11 +41,70 @@ function listCameras (data) {
 function showCameras () {
    getCameras (function (data) {
       listCameras(data);
-      currentCameras = data;
    });
 }
 
-window.onload = showCameras;
+function getStorage (callback) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/dvr/usage");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         callback((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function listStorage (data) {
+   var table = document.getElementsByClassName ('storage')[0];
+
+   for (var i = 0; i < data.length; i++) {
+      var line = document.createElement("tr");
+
+      var column = document.createElement("td");
+      column.innerHTML = data[i].volume;
+      column.className = 'storageCell';
+      line.appendChild(column);
+
+      var size = data[i].size;
+      var unit = 'M';
+
+      if (size > 1024) {
+         size = Math.round(size / 1024);
+         unit = 'G';
+      }
+      column = document.createElement("td");
+      column.innerHTML = size + unit;
+      column.className = 'storageCell';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].usage + '%';
+      column.className = 'storageCell';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].name;
+      column.className = 'storageCell';
+      line.appendChild(column);
+
+      table.appendChild(line);
+   }
+}
+
+function showStorage () {
+   getStorage (function (data) {
+      listStorage(data);
+   });
+}
+
+function showAll () {
+   showCameras();
+   showStorage();
+}
+
+window.onload = showAll;
 </script>
 </head>
 <body bgcolor=white text=black>
@@ -64,6 +121,16 @@ Home
  <tr>
   <th>Camera</th>
   <th>URL</th>
+ </tr>
+</table>
+</p>
+<p>
+<table class="storage">
+ <tr>
+  <th>Volume</th>
+  <th>Size</th>
+  <th>Usage</th>
+  <th>Comment</th>
  </tr>
 </table>
 </p>
