@@ -5,6 +5,6 @@
 PACKAGE="motionCenter-`date +%F`.tgz"
 
 mkdir -p packages
-tar -cf packages/$PACKAGE public scripts config install.sh README.md LICENSE
+tar -cf packages/$PACKAGE public scripts config sysv install.sh README.md LICENSE
 echo "Generated package $PACKAGE"
 

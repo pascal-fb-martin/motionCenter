@@ -17,7 +17,7 @@ if [ ! -d $INSTALLPATH ] ; then
    mkdir -p $INSTALLPATH
 fi
 
-for dir in public scripts video config ; do
+for dir in public scripts videos config ; do
    mkdir -p $INSTALLPATH/$dir
 done
 
@@ -37,7 +37,7 @@ done
 
 # Set proper ownership for all these files.
 
-for dir in public scripts video config ; do
+for dir in public scripts videos config ; do
    chown -R motion:motion $INSTALLPATH/$dir
 done
 
