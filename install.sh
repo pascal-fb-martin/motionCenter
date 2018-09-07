@@ -45,7 +45,9 @@ done
 # Install the tclHttpd default's configuration.
 
 SYSCONFIG=/etc/default/tclhttpd
-cp -uv $INSTALLPATH/config/tclhttpd.rc $SYSCONFIG
+if [ ! -e $SYSCONFIG ] ; then
+   cp -uv $INSTALLPATH/config/tclhttpd.rc $SYSCONFIG
+fi
 
 
 # Install the SYS V style init script.
