@@ -34,6 +34,10 @@ function listCameras (data) {
       column.appendChild(link);
       line.appendChild(column);
 
+      column = document.createElement("td");
+      column.innerHTML = data[i].free;
+      line.appendChild(column);
+
       table.appendChild(line);
    }
 }
@@ -121,6 +125,7 @@ Home
  <tr>
   <th>Camera</th>
   <th>URL</th>
+  <th>Free Space</th>
  </tr>
 </table>
 </p>

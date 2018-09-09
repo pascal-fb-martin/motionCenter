@@ -20,6 +20,7 @@ SLEEP=/bin/sleep
 HOSTNAME=/bin/hostname
 PING=/bin/ping
 ECHO=/bin/echo
+DF=/bin/df
 
 # Hardcoded defaults.
 #
@@ -66,8 +67,9 @@ while : ; do
    MYNAME=`cat /etc/hostname`
 
    MYIP=$($IP -o -4 addr list eth0 | $AWK '{print $4}' | $CUT -d/ -f1)
+   FREEMEM=$($DF -h /dev/shm | $GREP /dev/shm | $AWK '{print $4}')
    rm -f $WGETOUT
-   $WGET -nv --tries=5 --timeout=10 -o $WGETOUT -O - $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION > /dev/null 2>> $MJLOG
+   $WGET -nv --tries=5 --timeout=10 -o $WGETOUT -O - $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION\&available=$FREEMEM > /dev/null 2>> $MJLOG
    WGETSTATUS=$?
    if [ $WGETSTATUS -eq 0 ] ; then
       if [ $WASOK -ne 1 ] ; then

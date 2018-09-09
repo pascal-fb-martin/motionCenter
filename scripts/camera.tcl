@@ -21,8 +21,9 @@ proc webApiCamera/list {} {
 
    set sep "\["
 
-   foreach camera [lsort -command cameracompare [array names cameradb]] {
-      append result "${sep}{\"name\":\"$camera\",\"url\":\"$cameradb($camera)\"}"
+   foreach camera [lsort -command cameracompare [array names cameradb *.id]] {
+      set camera $cameradb($camera)
+      append result "${sep}{\"name\":\"$camera\",\"url\":\"$cameradb($camera.url)\",\"free\":\"$cameradb($camera.free)\"}"
       set sep ","
    }
    append result "\]"
@@ -32,7 +33,7 @@ proc webApiCamera/list {} {
 
 # Declare a new camera.
 #
-proc camera {name url} {
+proc camera {name url {available {}}} {
    global cameradb
 
    # Avoid assigning the same URL to multiple cameras. This can happen
@@ -41,20 +42,25 @@ proc camera {name url} {
    # (It does not matter that we delete this very camera as well, since
    # we are immediately re-createing the record.)
    #
-   foreach known [array names cameradb] {
-      if {$cameradb($known) == $url} {
-         unset cameradb($known)
+   foreach known [array names cameradb *.id] {
+      set known $cameradb($known)
+      if {$cameradb($known.url) == $url} {
+         unset cameradb($known.id)
+         unset cameradb($known.url)
+         unset cameradb($known.free)
       }
    }
 
-   set cameradb($name) $url
+   set cameradb($name.id) $name
+   set cameradb($name.url) $url
+   set cameradb($name.free) $available
 }
 
 # Provide a web API for the cameras to declare themselves.
 # This makes the server's configuration dynamic.
 #
-proc webApiCamera/declare {name url} {
-   camera $name $url
+proc webApiCamera/declare {name url available} {
+   camera $name $url $available
 }
 
 # Load the local configuration.
