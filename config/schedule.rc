@@ -1,21 +1,14 @@
 
-# The command are sent through UDP. A command could be lost.
-# So we execute each command multiple times: this increases
-# the odds for success.
-#
-schedule -random 600 -time 05:30 -command {orvibo on wiwo1}
-schedule -random 600 -time 05:40 -command {orvibo on wiwo1}
-schedule -random 600 -time 05:50 -command {orvibo on wiwo1}
+foreach d [list wiwo1 wiwo2 wiwo3] {
+   schedule device $d "orvibo on $d" "orvibo off $d"
+}
 
-schedule -random 1200 -time 07:20 -command {orvibo off wiwo1}
-schedule -random 1200 -time 07:30 -command {orvibo off wiwo1}
-schedule -random 1200 -time 07:40 -command {orvibo off wiwo1}
+schedule add -device wiwo1 -on 5:30 -off 6:20 -random 10
+schedule add -device wiwo1 -on 19:40 -off 21:28 -random 8
 
-schedule -random 600 -time 16:50 -command {orvibo on wiwo1}
-schedule -random 600 -time 16:55 -command {orvibo on wiwo1}
-schedule -random 600 -time 16:59 -command {orvibo on wiwo1}
+schedule add -device wiwo2 -on 5:00 -off 6:21 -random 7
+schedule add -device wiwo2 -on 19:30 -off 21:27 -random 11
 
-schedule -random 1200 -time 21:28 -command {orvibo off wiwo1}
-schedule -random 1200 -time 21:33 -command {orvibo off wiwo1}
-schedule -random 1200 -time 21:38 -command {orvibo off wiwo1}
+schedule add -device wiwo3 -on 5:01 -off 5:40 -random 9
+schedule add -device wiwo3 -on 20:40 -off 22:18 -random 11
 
