@@ -23,7 +23,7 @@ proc webApiCamera/list {} {
 
    foreach camera [lsort -command cameracompare [array names cameradb *.id]] {
       set camera $cameradb($camera)
-      append result "${sep}{\"name\":\"$camera\",\"url\":\"$cameradb($camera.url)\",\"free\":\"$cameradb($camera.free)\"}"
+      append result "${sep}{\"name\":\"$camera\",\"url\":\"$cameradb($camera.url)\",\"free\":\"$cameradb($camera.free)\",\"time\":\"[clock format $cameradb($camera.time)]\"}"
       set sep ","
    }
    append result "\]"
@@ -48,12 +48,14 @@ proc camera {name url {available {}}} {
          unset cameradb($known.id)
          unset cameradb($known.url)
          unset cameradb($known.free)
+         unset cameradb($known.time)
       }
    }
 
    set cameradb($name.id) $name
    set cameradb($name.url) $url
    set cameradb($name.free) $available
+   set cameradb($name.time) [clock seconds]
 }
 
 # Provide a web API for the cameras to declare themselves.
