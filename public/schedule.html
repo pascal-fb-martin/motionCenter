@@ -12,6 +12,21 @@ function listSchedule (data) {
       var line = document.createElement("tr");
 
       var column = document.createElement("td");
+      column.innerHTML = data[i].dev;
+      column.className = 'scheduleItem';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].start;
+      column.className = 'scheduleItem SchTime';
+      line.appendChild(column);
+
+      column = document.createElement("td");
+      column.innerHTML = data[i].end;
+      column.className = 'scheduleItem SchTime';
+      line.appendChild(column);
+
+      column = document.createElement("td");
       if (data[i].days) {
          column.innerHTML = data[i].days;
       } else {
@@ -21,40 +36,142 @@ function listSchedule (data) {
       line.appendChild(column);
 
       column = document.createElement("td");
-      column.innerHTML = data[i].time;
-      column.className = 'scheduleItem SchTime';
-      line.appendChild(column);
-
-      column = document.createElement("td");
       column.innerHTML = data[i].random;
       column.className = 'scheduleItem SchRandom';
       line.appendChild(column);
 
       column = document.createElement("td");
-      column.innerHTML = data[i].cmd;
+      column.innerHTML = data[i].latest;
       column.className = 'scheduleItem SchCommand';
       line.appendChild(column);
 
-      table.appendChild(line);
+      column = document.createElement("td");
+      column.innerHTML = '<button class ="plugButton plugButtonEnabled" onclick="deleteSchedule(\''+data[i].id+'\')">Delete</button></td>';
+      column.className = 'scheduleItem SchCommand';
+      line.appendChild(column);
+
+      var classname = 'row.'+data[i].id;
+      var existing = document.getElementsByClassName(classname)[0];
+      line.className = classname;
+
+      if (existing) {
+         table.replaceChild (line, existing);
+      } else {
+         table.appendChild(line);
+      }
    }
 }
 
-function getSchedule (callback) {
+function getSchedule () {
    var command = new XMLHttpRequest();
    command.open("GET", "/api/schedule/list");
    command.onreadystatechange = function () {
       if (command.readyState === 4 && command.status === 200) {
          var type = command.getResponseHeader("Content-Type");
-         callback((JSON.parse(command.responseText)));
+         listSchedule((JSON.parse(command.responseText)));
       }
    }
    command.send(null);
 }
 
+function addSchedule () {
+   var command = new XMLHttpRequest();
+   var url = "/api/schedule/add?device=";
+   val = document.getElementsByName('newdev')[0].value;
+   if (val.length == 0) return; // Error message?
+   url += val;
+
+   url += '&start=';
+   val = document.getElementsByName('newstart')[0].value;
+   if (val.length == 0) return; // Error message?
+   url += val;
+
+   val = document.getElementsByName('newend')[0].value;
+   if (val.length > 0) {
+      url += '&end=';
+      url += val;
+   }
+
+   var val = document.getElementsByName('newdays')[0].value.replace (/[ ,;]/gi, '+');
+   if (val.length > 0) {
+      url += '&days=';
+      url += val;
+   }
+
+   val = document.getElementsByName('newrand')[0].value;
+   if (val.length > 0) {
+      url += '&random=';
+      url += val;
+   }
+   command.open("GET", url);
+   command.send(null);
+}
+
+function deleteSchedule(id) {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/schedule/delete?id="+id);
+   command.send(null);
+   var element = document.getElementsByClassName('row.'+id)[0];
+   if (element) {
+     element.parentNode.removeChild(element);
+   }
+}
+
+function doNothing () {}
+
+function enableSchedule () {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/schedule/enable");
+   command.send(null);
+}
+
+function disableSchedule () {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/schedule/disable");
+   command.send(null);
+}
+
+function showState (data) {
+   var statetext = 'Disabled';
+   var buttontext = 'Enable Schedule';
+   var buttonaction = enableSchedule;
+   if (data.active) {
+      statetext = 'Active';
+      buttontext = 'Disable Schedule';
+      buttonaction = disableSchedule;
+   }
+   var elements = document.getElementsByClassName ("schState");
+   for (var i = 0; i < elements.length; i++) {
+      elements[i].innerHTML = statetext;
+   }
+   elements = document.getElementsByClassName ("schButton");
+   for (var i = 0; i < elements.length; i++) {
+      elements[i].innerHTML = buttontext;
+      elements[i].className = 'plugButtonEnabled plugButton schButton';
+      elements[i].onclick = buttonaction;
+   }
+}
+
+function getState () {
+   var command = new XMLHttpRequest();
+   command.open("GET", "/api/schedule/state");
+   command.onreadystatechange = function () {
+      if (command.readyState === 4 && command.status === 200) {
+         var type = command.getResponseHeader("Content-Type");
+         showState((JSON.parse(command.responseText)));
+      }
+   }
+   command.send(null);
+}
+
+function update () {
+   getSchedule();
+   getState();
+}
+
 function showSchedule () {
-   getSchedule (function (data) {
-      listSchedule(data);
-   });
+   update();
+   setInterval(update, 3000);
 }
 
 window.onload = showSchedule;
@@ -67,15 +184,27 @@ window.onload = showSchedule;
  | <a href="/mosaic.html">Live Video</a>
  | <a href="/calendar.html">DVR Log</a>
  | <a href="/plug.html">Plug Control</a>
- | Schedule
+ | Schedule (<span class="schState">Loading..</span>)
+ <button class="schButton plugButtonDisabled" onclick="doNothing()">Loading..</button>
 </div>
 <p>
 <table class="schedule">
   <tr>
+     <th>Device</th>
+     <th>Start Time</th>
+     <th>End Time</th>
      <th>Days</th>
-     <th>Time</th>
      <th>Random</th>
-     <th>Command</th>
+     <th>Latest</th>
+  </tr>
+  <tr>
+     <td><input type="text" size="6" name="newdev" placeholder="Name"></td>
+     <td><input type="text" size="6" name="newstart" placeholder="Start"></td>
+     <td><input type="text" size="6" name="newend" placeholder="End"></td>
+     <td><input type="text" size="6" name="newdays" placeholder="Days"></td>
+     <td><input type="text" size="6" name="newrand" placeholder="Random"></td>
+     <td></td>
+     <td><button class ="plugButton plugButtonEnabled" onclick="addSchedule()">Add</button></td>
   </tr>
 </table>
 </center>

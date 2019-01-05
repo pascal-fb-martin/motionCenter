@@ -12,19 +12,31 @@ proc webApiSchedule/list {} {
 
    set sep "\["
 
-   foreach id [lsort [array name scheduledb sch.*.id]] {
+   foreach id [lsort [array names scheduledb sch.*.id]] {
       set id $scheduledb($id)
       set c $scheduledb($id.device)
       set d $scheduledb($id.days)
       set s $scheduledb($id.start)
       set e $scheduledb($id.end)
       set r $scheduledb($id.random)
-      append result "${sep}{\"id\":\"$id\",\"days\":\"$d\",\"start\":\"$s\",\"end\":\"$e\",\"random\":$r,\"dev\":\"$c\"}"
+      set l $scheduledb(dev.$c.latest)
+      append result "${sep}{\"id\":\"$id\",\"days\":\"$d\",\"start\":\"$s\",\"end\":\"$e\",\"random\":$r,\"dev\":\"$c\",\"latest\":\"$l\"}"
       set sep ","
    }
+   if {$sep != ","} {append result $sep}
    append result "\]"
 
    return $result
+}
+
+proc webApiSchedule/add {device start {end {}} {days {}} {random {}}} {
+   schedule add -device $device -on $start -off $end -only $days -random $random
+   saveschedule
+}
+
+proc webApiSchedule/delete {id} {
+   schedule delete $id
+   saveschedule
 }
 
 proc webApiSchedule/devices {} {
@@ -33,13 +45,25 @@ proc webApiSchedule/devices {} {
 
    set sep "\["
 
-   foreach id [lsort [array name scheduledb dev.*.id]] {
+   foreach id [lsort [array names scheduledb dev.*.id]] {
       set id $scheduledb($id)
+      set na $scheduledb($id.name)
       set n $scheduledb($id.on)
       set f $scheduledb($id.off)
-      append result "${sep}{\"id\":\"$id\",\"on\":\"$n\",\"off\":\"$f\"}"
+      if {$scheduledb($id.sch) != {}} {
+          set ll [llength $scheduledb($id.sch)]
+          set d "\[\"[lindex $scheduledb($id.sch) 0]\""
+          for {set i 1} {$i < $ll} {incr i} {
+             append d ",\"[lindex $scheduledb($id.sch) $i]\""
+          }
+          append d "\]"
+      } else {
+         set d "\[\]"
+      }
+      append result "${sep}{\"id\":\"$id\",\"name\":\"$na\",\"on\":\"$n\",\"off\":\"$f\", \"sch\":$d}"
       set sep ","
    }
+   if {$sep != ","} {append result $sep}
    append result "\]"
 
    return $result
@@ -66,10 +90,11 @@ proc webApiSchedule/disable {} {
 
    foreach dev [array names scheduledb dev.*.id] {
       set dev $scheduledb($dev)
-      set command $scheduledb($id.off)
+      set command $scheduledb($dev.off)
+      if {$command == "ignore"} continue
       eventlog "executing $command"
 
-      if {[catch [eval $command] msg]} {
+      if {[catch {eval $command} msg]} {
          eventlog "failed $command ($msg)"
       }
    }
@@ -111,6 +136,8 @@ proc _randomize {random value} {
    return $result
 }
 
+proc ignore {} {}
+
 # The actual scheduler that executes the actions defined in the schedule.
 #
 proc _scheduler {} {
@@ -127,6 +154,11 @@ proc _scheduler {} {
    foreach dev [array names scheduledb dev.*.id] {
       set dev $scheduledb($dev)
 
+      # If there is no scheduled action at all for a given device, take
+      # this as a hint that the scheduler should not touch it at all.
+      #
+      if {$scheduledb($dev.sch) == {}} continue
+
       set action off
       set doitnow 0
 
@@ -134,7 +166,7 @@ proc _scheduler {} {
       #
       foreach id $scheduledb($dev.sch) {
 
-         set end $scheduledb($id.off)
+         if {[catch {set end $scheduledb($id.off)}]} continue
 
          # Randomize the time interval each day.
          #
@@ -177,14 +209,19 @@ proc _scheduler {} {
       }
 
       if {$scheduledb($dev.latest) != $action} {
-         eventlog "executing $command"
+         eventlog "executing scheduled command $command"
          set scheduledb($dev.latest) $action
          set doitnow 1
       }
 
       if {$doitnow} {
-         if {[catch [eval $command] msg]} {
-            eventlog "failed $command ($msg)"
+         if {[catch {eval $command} msg]} {
+            if {! $scheduledb($dev.error)} {
+               eventlog "failed $command ($msg)"
+            }
+	    set scheduledb($dev.error) 1
+         } else {
+	    set scheduledb($dev.error) 0
          }
       }
    }
@@ -218,6 +255,7 @@ proc schedule {action args} {
       }
       set dev "dev.[lindex $args 0]"
       set scheduledb($dev.id) $dev
+      set scheduledb($dev.name) [lindex $args 0]
       set scheduledb($dev.on) [lindex $args 1]
       if {[llength $args] == 3} {
          set scheduledb($dev.off) [lindex $args 2]
@@ -225,6 +263,26 @@ proc schedule {action args} {
          set scheduledb($dev.off) ignore
       }
       set scheduledb($dev.latest) {}
+      if {! [info exists scheduledb($dev.sch)]} {
+         set scheduledb($dev.sch) {}
+      }
+      set scheduledb($dev.error) 0
+      return
+   }
+
+   if {$action == "delete"} {
+      foreach id $args {
+          foreach e [list id device start end days random on off variableOn variableOff] {
+             unset -nocomplain scheduledb($id.$e)
+          }
+          foreach dev [array names scheduledb dev.*.id] {
+             set dev $scheduledb($dev)
+             set index [lsearch -exact $scheduledb($dev.sch) $id]
+             if {$index >= 0} {
+                set scheduledb($dev.sch) [lreplace $scheduledb($dev.sch) $index $index]
+             }
+          }
+      }
       return
    }
 
@@ -244,8 +302,12 @@ proc schedule {action args} {
          -on      {set on $value}
          -off     {set off $value}
          -device  {set device $value}
-         -only    {set day $value}
+         -only    {set days $value}
       }
+   }
+
+   if {! [info exists scheduledb(dev.$device.id)]} {
+      error "device $device not defined"
    }
 
    if {$on == {}} {error "no on action time provided"}
@@ -273,8 +335,46 @@ proc schedule {action args} {
    lappend scheduledb(dev.$device.sch) $id
 }
 
+proc saveschedule {} {
+
+   global scheduledb liveschedule
+
+   if {[catch {set fd [open $liveschedule w]} msg]} {
+      eventlog "cannot save configuration to $liveschedule"
+      return
+   }
+
+   foreach id [lsort [array names scheduledb dev.*.id]] {
+      set id $scheduledb($id)
+      set na $scheduledb($id.name)
+      set n $scheduledb($id.on)
+      set f $scheduledb($id.off)
+      puts $fd "schedule device $na {$n} {$f}"
+   }
+
+   foreach id [lsort [array names scheduledb sch.*.id]] {
+      set id $scheduledb($id)
+      set c $scheduledb($id.device)
+      set d $scheduledb($id.days)
+      set s $scheduledb($id.start)
+      set e $scheduledb($id.end)
+      set r $scheduledb($id.random)
+      puts $fd "schedule add -device $c -on $s -off $e -only {$d} -random $r"
+   }
+   close $fd
+}
+
 # Load the local configuration.
+# There are two main configurations:
 #
+# - schedule.live represents the configuration as was last active, including
+#   online changes. This file is updated on restart or on online changes.
+#
+# - schedule.rc represents a static configuration, before any online change.
+#   That file is never modified by the application.
+#
+# On start, the application loads the most recent file only. This allows
+# resetting the configuration to a known state.
 
 if {[cget motionCenter] == {}} {
    # Vanilla TclHttpd config file: assume fixed location.
@@ -285,10 +385,27 @@ if {[cget motionCenter] == {}} {
    #
    set scheduleConfigDir [file join [cget motionCenter] config]
 }
-foreach cf [list schedule.rc schedule.tcl] {
+set liveschedule [file join $scheduleConfigDir schedule.live]
+
+set reftime 0
+set refcfg {}
+foreach cf [list schedule.live schedule.rc] {
    set cfp [file join $scheduleConfigDir $cf]
    if {[file readable $cfp]} {
-      source $cfp
+      set curtime [file mtime $cfp]
+      if {$curtime > $reftime} {
+         set refcfg $cfp
+	 set reftime $curtime
+      }
+   }
+}
+if {$refcfg != {}} {
+   eventlog "loading configuration from $refcfg"
+   source $refcfg
+   if {! [file readable $liveschedule]} {
+      saveschedule
+   } elseif {[file mtime $liveschedule]] < $reftime} {
+      saveschedule
    }
 }
 
@@ -297,7 +414,11 @@ foreach cf [list schedule.rc schedule.tcl] {
 proc _scheduletimer {} {
    global scheduleIsActive
 
-   if {$scheduleIsActive} _scheduler
+   if {$scheduleIsActive} {
+      if {[catch _scheduler msg]} {
+         eventlog "scheduler error: $msg"
+      }
+   }
    after 30000 _scheduletimer
 }
 _scheduletimer
