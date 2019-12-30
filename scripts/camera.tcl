@@ -33,7 +33,7 @@ proc webApiCamera/list {} {
 
 # Declare a new camera.
 #
-proc camera {name url {available {}}} {
+proc camera {name url {available {}} {devices {}}} {
    global cameradb
 
    # Avoid assigning the same URL to multiple cameras. This can happen
@@ -61,8 +61,14 @@ proc camera {name url {available {}}} {
 # Provide a web API for the cameras to declare themselves.
 # This makes the server's configuration dynamic.
 #
-proc webApiCamera/declare {name url available} {
-   camera $name $url $available
+proc webApiCamera/declare {name url available {devices {}}} {
+   if {$devices != {}} {
+      foreach dev $devices {
+	 camera $name:$dev $url/$dev/stream $available
+      }
+   } else {
+      camera $name $url $available
+   }
 }
 
 # Load the local configuration.
