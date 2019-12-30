@@ -114,7 +114,7 @@ function drawDayEvents (data) {
       subtable.appendChild(subrow);
       subrow = document.createElement("tr");
       subitem = document.createElement("td");
-      subitem.innerHTML = '<a href="/api/avi?date=' + data[i].date + '&avi=' + data[i].vid + '"><img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:100%;"></a>';
+      subitem.innerHTML = '<a href="' + data[i].url + '?date=' + data[i].date + '&avi=' + data[i].vid + '"><img src="/api/snapshot?date=' + data[i].date + '&jpg=' + data[i].jpg + '"' + 'style="width:100%;"></a>';
       subrow.appendChild(subitem);
       subtable.appendChild(subrow);
       item.appendChild(subtable);

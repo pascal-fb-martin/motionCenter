@@ -21,8 +21,13 @@ if [ "X$files" != "X" ] ; then
       dir=`dirname $file`
       dir=`expr "$dir" : '/dev/shm/videos/\([0-9/].*\)'`
       mkdir -p $dst/$dir
-      target=`basename $file`
-      mv -f $file $dst/$dir/$target &
+      if [[ $file == *.mp4 ]] ; then
+         base=`basename $file .mp4`
+         (ffmpeg -i file:$file -c copy file:$dst/$dir/$base.mkv && rm -f $file) &
+      else
+         target=`basename $file`
+         mv -f $file $dst/$dir/$target &
+      fi
    done
 fi
 

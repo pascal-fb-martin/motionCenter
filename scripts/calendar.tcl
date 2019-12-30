@@ -68,7 +68,7 @@ proc webApi/daily {year month day} {
    if {[catch {cd $path}]} {
       return "\[\]"
    }
-   set events [lsort -command timeCompare [glob -nocomplain *.avi]]
+   set events [lsort -command timeCompare [glob -nocomplain *.avi *.mp4* *.mkv]]
    if {$events == {}} {
       return "\[\]"
    }
@@ -79,6 +79,7 @@ proc webApi/daily {year month day} {
       # The JPEG associated with each event has the same root name
       # (use keyword "preview" in motion.cfg).
       #
+      set ext [string range [file extension $video] 1 end]
       set time [lindex [split $video -] 0]
       set camera [join [lrange [split [lindex [split $video -] 1] {:}] 0 1] {:}]
       set jpg "[file rootname $video].jpg"
@@ -87,7 +88,7 @@ proc webApi/daily {year month day} {
       } else {
          set jpg "null"
       }
-      append result $sep "{\"cam\":\"$camera\",\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"vid\":\"$video\",\"jpg\":$jpg}"
+      append result $sep "{\"cam\":\"$camera\",\"date\":\"$year/$month/$day\",\"time\":\"$time\",\"url\":\"/api/$ext\",\"vid\":\"$video\",\"jpg\":$jpg}"
       set sep ","
    }
    cd $pwd
@@ -111,8 +112,22 @@ proc webApi/snapshot {date jpg} {
 }
 
 set webApi/avi video/x-msvideo
+set webApi/mp4 video/mp4
+set webApi/mkv video/x-matroska
 
 proc webApi/avi {date avi} {
+
+   global motionConfig
+   dumpStaticBinaryData [file join $motionConfig(videos) $date $avi]
+}
+
+proc webApi/mp4 {date avi} {
+
+   global motionConfig
+   dumpStaticBinaryData [file join $motionConfig(videos) $date $avi]
+}
+
+proc webApi/mkv {date avi} {
 
    global motionConfig
    dumpStaticBinaryData [file join $motionConfig(videos) $date $avi]
