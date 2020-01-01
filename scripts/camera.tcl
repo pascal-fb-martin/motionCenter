@@ -31,9 +31,31 @@ proc webApiCamera/list {} {
    return $result
 }
 
-# Declare a new camera.
+# Eliminate one camera from the database.
 #
-proc camera {name url {available {}} {devices {}}} {
+proc camera_remove {id} {
+   global cameradb
+   foreach known [array names cameradb $id.*] {
+      unset cameradb($known)
+   }
+}
+
+# Eliminate any cameras for one given server.
+#
+proc camera_remove_server {server} {
+   global cameradb
+   foreach known [array names cameradb *.id] {
+      set id $cameradb($known)
+      set name [lindex [split $id :] 0]
+      if {$name == $server} {
+         camera_remove $id
+      }
+   }
+}
+
+# Declare one new camera.
+#
+proc camera {name url {available {}}} {
    global cameradb
 
    # Avoid assigning the same URL to multiple cameras. This can happen
@@ -45,10 +67,7 @@ proc camera {name url {available {}} {devices {}}} {
    foreach known [array names cameradb *.id] {
       set known $cameradb($known)
       if {$cameradb($known.url) == $url} {
-         unset cameradb($known.id)
-         unset cameradb($known.url)
-         unset cameradb($known.free)
-         unset cameradb($known.time)
+         camera_remove $known
       }
    }
 
@@ -60,11 +79,13 @@ proc camera {name url {available {}} {devices {}}} {
 
 # Provide a web API for the cameras to declare themselves.
 # This makes the server's configuration dynamic.
+# Each camera server may declare a list of cameras, or be a camera itself.
 #
 proc webApiCamera/declare {name url available {devices {}}} {
+   camera_remove_server $name
    if {$devices != {}} {
       foreach dev $devices {
-	 camera $name:$dev $url/$dev/stream $available
+         camera $name:$dev $url/$dev/stream $available
       }
    } else {
       camera $name $url $available

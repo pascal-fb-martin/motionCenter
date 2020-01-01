@@ -24,25 +24,31 @@ DF=/bin/df
 
 # Hardcoded defaults.
 #
-WEBSRV=mymotioncenter
-WEBSRVPORT=8015
-WEBMOTION=8081
-WEBNIC=eth0
-CAMERAS=
+export WEBSRV=mymotioncenter
+export WEBSRVPORT=8015
+export WEBMOTION=8081
+export WEBNIC=eth0
+export CAMERAS=
+
+export MJLOG=/var/lib/motion/motionjoin.log
 
 # Search for the local system configuration.
 #
-if [ -e /etc/default/motionCenter ] ; then
-   . /etc/default/motionCenter
-fi
 if [ -e /etc/motion/motion.conf ] ; then
+   for c in $($GREP ^camera /etc/motion/motion.conf | $AWK '{print $2}')
+   do
+      id=$($GREP ^camera_id $c | $AWK '{print $2}')
+      CAMERAS=$CAMERAS+$id
+   done
+   CAMERAS=${CAMERAS:1}
    WEBMOTION=$($GREP stream_port /etc/motion/motion.conf | $AWK '{print $2}')
 fi
 
-WEBURL="http://$WEBSRV:$WEBSRVPORT/api/camera/declare"
-MJLOG=/var/lib/motion/motionjoin.log
+if [ -e /etc/default/motionCenter ] ; then
+   . /etc/default/motionCenter
+fi
 
-$ECHO "`date` motion-join started on $($HOSTNAME), server $WEBSRV" >> $MJLOG
+$ECHO "`date` motion-join started on $($HOSTNAME), cameras $CAMERAS, server $WEBSRV" >> $MJLOG
 
 # Make sure we can write some output (or else wget complains?) but that
 # we don't do it on disk of SD (wears the SD out).
@@ -58,6 +64,7 @@ WGETOUT=wgetlog
 # Log changes of state (first success, new failure, success after failure).
 #
 WASOK=2
+WEBURL="http://$WEBSRV:$WEBSRVPORT/api/camera/declare"
 while : ; do
    $SLEEP 10
 
