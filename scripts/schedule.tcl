@@ -187,7 +187,7 @@ proc _scheduler {} {
 
          # If specific days were specified, avoid any other day.
          #
-         if {$scheduledb($id.days) != {}} {
+         if {scheduledb($id.days) != "all" && $scheduledb($id.days) != {}} {
             set r1 [lsearch -exact $scheduledb($id.days) $today1]
             set r2 [lsearch -exact $scheduledb($id.days) $today2]
             if {($r1 < 0) && ($r2 < 0)} continue
@@ -404,7 +404,7 @@ if {$refcfg != {}} {
    source $refcfg
    if {! [file readable $liveschedule]} {
       saveschedule
-   } elseif {[file mtime $liveschedule]] < $reftime} {
+   } elseif {[file mtime $liveschedule] < $reftime} {
       saveschedule
    }
 }
