@@ -53,6 +53,21 @@ proc camera_remove_server {server} {
    }
 }
 
+# Eliminate any cameras not declared for more than two minutes.
+#
+proc camera_prune {} {
+   set deadline [expr [clock seconds] - 120]
+   global cameradb
+   foreach known [array names cameradb *.id] {
+      set id $cameradb($known)
+      if {$cameradb($id.time) < $deadline} {
+          camera_remove $id
+      }
+   }
+   after 10000 camera_prune
+}
+camera_prune
+
 # Declare one new camera.
 #
 proc camera {name url {available {}}} {
