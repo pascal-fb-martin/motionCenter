@@ -60,6 +60,10 @@
 # disk device [disk info] /
 # Returns the name of the device for the partition mounted on /.
 #
+# disk clean 80 /path
+# Remove the oldest files and directories in /path until the space used
+# is lower that 80%. This never removes file less than 7 days old.
+#
 #---------------------------------------------------------------
 proc disk { cmd args } {
    switch -glob $cmd {
@@ -130,6 +134,26 @@ proc disk { cmd args } {
             }
          }
          error "invalid mount point $a"
+      }
+
+      c* {
+         if {[llength $args] != 2} {error "bad arguments"}
+         set limit [lindex $args 0]
+         set path [lindex $args 1]
+         set days 91
+         while {$day > 7 && [disk use $path] > 85} {
+             set old [exec /usr/bin/find $path -type d -ctime +[incr days -1]]
+             foreach d [split $old "\n"] {
+                 if {$d == $path} continue
+                 if {$d == {}} continue
+                 if {$d == {/}} continue
+                 if {$d == {/usr}} continue
+                 if {$d == {/bin}} continue
+                 if {$d == {/lib}} continue
+                 if {$d == {/etc}} continue
+                 catch {exec /bin/rm -rf $d}
+             }
+         }
       }
    }
    error "invalid command $cmd"

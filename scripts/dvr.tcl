@@ -20,3 +20,14 @@ proc webApiDvr/usage {} {
    return "${result}\]"
 }
 
+proc DvrPeriodicCleanup {} {
+    disk clean 85 $::motionConfig(videos)
+    after 1800000 DvrPeriodicCleanup
+}
+
+# Do not launch a disk cleanup now, because the order in which Tclhttpd
+# loads the Tcl modules is not well defined. So wait for a few seconds,
+# which guarantees that the code is idle and initialization is complete.
+#
+after 10000 DvrPeriodicCleanup
+
