@@ -21,7 +21,9 @@ proc webApiDvr/usage {} {
 }
 
 proc DvrPeriodicCleanup {} {
-    disk clean 85 $::motionConfig(videos)
+    if {[catch {disk clean 85 $::motionConfig(videos)} msg]} {
+        eventlog "Disk cleanup failed: $msg"
+    }
     after 1800000 DvrPeriodicCleanup
 }
 

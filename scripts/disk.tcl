@@ -105,6 +105,9 @@ proc disk { cmd args } {
             set lst [lindex $args 0]
             set   a [lindex $args 1]
          }
+         set longest_match 0
+         set best_result 0
+
          foreach p $lst {
             switch -glob $cmd {
                s* { set r [lindex $p 1] }
@@ -113,10 +116,15 @@ proc disk { cmd args } {
             if { [string equal [lindex $p 0] $a] } {
                return $r
             }
-            if { [string equal [lindex $p end] $a] } {
-               return $r
+            set volpath [lindex $p end]
+            if { [string match  "${volpath}*" $a] } {
+               if {[string length $volpath] > $longest_match} {
+                   set longest_match [string length $volpath]
+                   set best_result $r
+               }
             }
          }
+         if {$longest_match > 0} {return $best_result}
          error "invalid partition or mount point $a"
       }
 
@@ -141,8 +149,9 @@ proc disk { cmd args } {
          set limit [lindex $args 0]
          set path [lindex $args 1]
          set days 91
-         while {$day > 7 && [disk use $path] > 85} {
-             set old [exec /usr/bin/find $path -type d -ctime +[incr days -1]]
+         while {$days > 7 && [disk use $path] > 85} {
+             if {[catch {set old [exec /usr/bin/find $path -type d -ctime +[incr days -1]]}]} continue
+             if {$old == {}} continue
              foreach d [split $old "\n"] {
                  if {$d == $path} continue
                  if {$d == {}} continue
@@ -151,9 +160,11 @@ proc disk { cmd args } {
                  if {$d == {/bin}} continue
                  if {$d == {/lib}} continue
                  if {$d == {/etc}} continue
+                 eventlog "Disk cleanup: delete $d"
                  catch {exec /bin/rm -rf $d}
              }
          }
+         return
       }
    }
    error "invalid command $cmd"
