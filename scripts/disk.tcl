@@ -149,7 +149,7 @@ proc disk { cmd args } {
          set limit [lindex $args 0]
          set path [lindex $args 1]
          set days 91
-         while {$days > 7 && [disk use $path] > 85} {
+         while {$days > 7 && [disk use $path] > $limit} {
              if {[catch {set old [exec /usr/bin/find $path -type d -ctime +[incr days -1]]}]} continue
              if {$old == {}} continue
              foreach d [split $old "\n"] {
