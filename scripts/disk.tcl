@@ -68,7 +68,7 @@
 proc disk { cmd args } {
    switch -glob $cmd {
       info {
-         set f [ open "|/bin/df" "r" ]
+         set f [ open "|/bin/df -h" "r" ]
          regsub -all { +} [ read $f ]  " " lst
          close $f
          regsub -all {%} $lst "" lst
@@ -149,7 +149,13 @@ proc disk { cmd args } {
          set limit [lindex $args 0]
          set path [lindex $args 1]
          set days 91
-         while {$days > 7 && [disk use $path] > $limit} {
+         set use [disk use $path]
+         set cleanup 0
+         if {$use > $limit} {
+             eventlog "Disk $path is $use full (> $limit), start cleaning"
+             set cleanup 1
+         }
+         while {$days > 7 && $use > $limit} {
              if {[catch {set old [exec /usr/bin/find $path -type d -ctime +[incr days -1]]}]} continue
              if {$old == {}} continue
              foreach d [split $old "\n"] {
@@ -163,7 +169,9 @@ proc disk { cmd args } {
                  eventlog "Disk cleanup: delete $d"
                  catch {exec /bin/rm -rf $d}
              }
+             set use [disk use $path]
          }
+         if {$use > $limit} {eventlog "Disk cleaning complete"}
          return
       }
    }

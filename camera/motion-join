@@ -26,12 +26,20 @@ HEAD=/usr/bin/head
 # Hardcoded defaults.
 #
 export WEBSRV=mymotioncenter
-export WEBSRVPORT=8015
-export WEBMOTION=8081
+# export WEBSRVPORT=8015
+# export WEBSRVURI=/api/camera/declare
+export WEBSRVPORT=80
+export WEBSRVURI=/dvr/source/declare
+export WEBMOTIONADM=8080
+export WEBMOTIONCAM=8081
 export WEBNIC=eth0
 export CAMERAS=
 
 export MJLOG=/var/lib/motion/motionjoin.log
+
+# Create some resource that motion needs:
+mkdir /dev/shm/videos
+chown motion:motion /dev/shm/videos
 
 # Search for the local system configuration.
 #
@@ -65,7 +73,7 @@ WGETOUT=wgetlog
 # Log changes of state (first success, new failure, success after failure).
 #
 WASOK=2
-WEBURL="http://$WEBSRV:$WEBSRVPORT/api/camera/declare"
+WEBURL="http://$WEBSRV:$WEBSRVPORT$WEBSRVURI/api/camera/declare"
 while : ; do
    $SLEEP 10
 
@@ -79,7 +87,7 @@ while : ; do
    MYIP=$($IP -o -4 addr list $WEBNIC | $HEAD -n 1 | $AWK '{print $4}' | $CUT -d/ -f1)
    FREEMEM=$($DF -h /dev/shm | $GREP /dev/shm | $AWK '{print $4}')
    rm -f $WGETOUT
-   $WGET -nv --tries=5 --timeout=10 -o $WGETOUT -O - $WEBURL\?name=$MYNAME\&url=$MYIP:$WEBMOTION\&available=$FREEMEM\&devices=$CAMERAS > /dev/null 2>> $MJLOG
+   $WGET -nv --tries=5 --timeout=10 -o $WGETOUT -O - $WEBURL\?name=$MYNAME\&admin=$MYIP:$WEBMOTIONADM\&url=$MYIP:$WEBMOTIONCAM\&available=$FREEMEM\&devices=$CAMERAS > /dev/null 2>> $MJLOG
    WGETSTATUS=$?
    if [ $WGETSTATUS -eq 0 ] ; then
       if [ $WASOK -ne 1 ] ; then

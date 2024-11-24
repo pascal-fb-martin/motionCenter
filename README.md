@@ -1,5 +1,9 @@
 # motionCenter
 
+This software is now obsolete: please check [HouseDVR](https://github.com/pascal-fb-martin/housedvr) instead.
+
+(The camera/motion-join script is still in use, with HouseDVR running in a quasi compatible mode for now.)
+
 ## Overview
 
 This software runs a web site to provide control of a swarm of motion-equipped cameras.

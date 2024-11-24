@@ -1,66 +1,12 @@
 # Orvibo S20 control
 
+# Declare this driver, so that the plug Web interface can call it.
+#
+lappend PlugDrivers orvibo
+
+# Orvibo S20 Network Protocol. -------------------------------------------
+
 package require udp
-
-# -- Orvibo S20 Web User Interface. --------------------------------------
-
-Direct_Url /api/plug webApiPlug
-
-proc _orviboList {} {
-
-   global orvibodb
-
-   set sep "\["
-
-   foreach id [lsort [array names orvibodb *.id]] {
-      set id $orvibodb(${id})
-      set ip $orvibodb(${id}.ip)
-      if {$ip != {}} {
-         set s $orvibodb(${id}.state)
-         append result "${sep}{\"name\":\"$id\",\"ip\":\"$ip\",\"state\":$s}"
-      } else {
-         append result "${sep}{\"name\":\"$id\"}"
-      }
-      set sep ","
-   }
-   append result "\]"
-
-   return $result
-}
-
-proc webApiPlug/list {} {
-   _orviboList
-}
-
-proc webApiPlug/set {name state} {
-   orvibo $state $name
-}
-
-proc webApiPlug/declare {name mac} {
-   orvibo declare $name $mac
-
-   global orviboConfigDir
-   set fd [open [file join $orviboConfigDir orvibo-live.tcl] a]
-   puts $fd "orvibo declare $name $mac"
-   close $fd
-
-   _orviboList
-}
-
-proc webApiPlug/new {} {
-   global orvibonew
-   set sep "\["
-   foreach id [lsort [array names orvibonew *.mac]] {
-      set mac $orvibonew($id)
-      set ip $orvibonew(${mac}.ip)
-      append result "${sep}{\"mac\":\"$mac\",\"ip\":\"$ip\"}"
-      set sep ","
-   }
-   append result "\]"
-   return $result
-}
-
-# -- Orvibo S20 Control. -------------------------------------------------
 
 set orvibonet [udp_open 10000 reuse]
 fconfigure $orvibonet -broadcast 1 -buffering none -encoding binary
@@ -153,9 +99,11 @@ proc _orviboSubscribe {id} {
    _orviboSend $id "6864001e636c${mac}202020202020${reverse}202020202020"
 }
 
-proc orvibo {command id args} {
+# Orvibo Driver Interface. ------------------------------------------------
+#
+proc orvibo {command {id {}} args} {
 
-   global orvibodb
+   global PlugDevices orvibodb
 
    switch $command {
       declare {
@@ -179,6 +127,46 @@ proc orvibo {command id args} {
          # Force an immediate discovery of this new plug.
          global orvibonet
          _orviboSense $orvibonet
+
+	 # Declare this device to the plug interface.
+	 set PlugDevices($id) orvibo
+      }
+
+      add {
+         set mac [lindex $args 0]
+         orvibo declare $id $mac
+	 global orviboConfigDir
+         set fd [open [file join $orviboConfigDir orvibo-live.tcl] a]
+	 puts $fd "orvibo declare $id $mac"
+         close $fd
+      }
+
+      detected {
+         global orvibonew
+	 set result {}
+         foreach id [lsort [array names orvibonew *.mac]] {
+            set mac $orvibonew($id)
+            set ip $orvibonew(${mac}.ip)
+            lappend result "{\"driver\":\"orvibo\",\"mac\":\"$mac\",\"ip\":\"$ip\"}"
+         }
+         return $result
+      }
+
+      known {
+
+         set result {}
+
+         foreach id [lsort [array names orvibodb *.id]] {
+            set id $orvibodb(${id})
+            set ip $orvibodb(${id}.ip)
+            if {$ip != {}} {
+               set s $orvibodb(${id}.state)
+               lappend result "{\"name\":\"$id\",\"ip\":\"$ip\",\"state\":$s,\"driver\":\"orvibo\"}"
+            } else {
+               lappend result "{\"name\":\"$id\",\"driver\":\"orvibo\"}"
+            }
+         }
+         return $result
       }
 
       off {
@@ -196,8 +184,13 @@ proc orvibo {command id args} {
             after 500 "_orviboSend $id $packet"
          }
       }
+
+      dim {
+         # Not supported.
+      }
    }
 }
+
 
 # Load the local configuration.
 #
